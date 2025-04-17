@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Filter } from "lucide-react"
@@ -10,9 +11,9 @@ import ProtectedRoute from "@/components/protected-route"
 // Mock data for investment groups (record labels and curators)
 const mockInvestmentGroups = [
   {
-    id: 1,
+    id: "1",
     name: "Original Works",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/surprised-owl.png",
     type: "Record Label",
     tags: ["Indie Pop", "Electronic"],
     owner: {
@@ -31,9 +32,9 @@ const mockInvestmentGroups = [
     isMember: false,
   },
   {
-    id: 2,
+    id: "2",
     name: "Phat Trax",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/physical-therapy-session.png",
     type: "Record Label",
     tags: ["Hip-Hop", "R&B", "Soul"],
     owner: {
@@ -53,9 +54,9 @@ const mockInvestmentGroups = [
     isMember: true,
   },
   {
-    id: 3,
+    id: "3",
     name: "Coop Records",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/abstract-color-run.png",
     type: "Curator",
     tags: ["Electronic", "Ambient"],
     owner: {
@@ -75,9 +76,9 @@ const mockInvestmentGroups = [
     isMember: true,
   },
   {
-    id: 4,
+    id: "4",
     name: "Future Sounds",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/placeholder.svg?height=80&width=80&query=FS",
     type: "Record Label",
     tags: ["Electronic", "Dance"],
     owner: {
@@ -91,9 +92,9 @@ const mockInvestmentGroups = [
     isMember: false,
   },
   {
-    id: 5,
+    id: "5",
     name: "Indie Collective",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/placeholder.svg?height=80&width=80&query=IC",
     type: "Curator",
     tags: ["Indie Rock", "Alternative"],
     owner: {
@@ -193,7 +194,7 @@ export default function GroupsPage() {
           {/* Filters (conditionally shown) */}
           {showFilters && (
             <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Group Type</label>
                   <select
@@ -245,36 +246,36 @@ export default function GroupsPage() {
 
           {/* Tab Navigation - Styled to match the image */}
           <div className="bg-white rounded-lg shadow-sm mb-6">
-            <div className="flex border-b">
+            <div className="flex flex-wrap border-b">
               <button
-                className={`px-4 py-4 text-sm font-medium border-b-2 ${
+                className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 ${
                   activeTab === "browse"
                     ? "border-black text-black"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
                 onClick={() => setActiveTab("browse")}
               >
-                Browse groups • {browseCount}
+                Browse • {browseCount}
               </button>
               <button
-                className={`px-4 py-4 text-sm font-medium border-b-2 ${
+                className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 ${
                   activeTab === "pending"
                     ? "border-black text-black"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
                 onClick={() => setActiveTab("pending")}
               >
-                Pending applications {pendingCount > 0 ? `• ${pendingCount}` : ""}
+                Pending {pendingCount > 0 ? `• ${pendingCount}` : ""}
               </button>
               <button
-                className={`px-4 py-4 text-sm font-medium border-b-2 ${
+                className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 ${
                   activeTab === "my"
                     ? "border-black text-black"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
                 onClick={() => setActiveTab("my")}
               >
-                My groups • {myGroupsCount}
+                My Groups • {myGroupsCount}
               </button>
             </div>
           </div>
@@ -337,7 +338,9 @@ export default function GroupsPage() {
                       </div>
 
                       <div className="mt-4">
-                        <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
+                        <Link href={`/groups/${group.id}`}>
+                          <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -409,7 +412,9 @@ export default function GroupsPage() {
 
                       <div className="mt-4">
                         <div className="text-sm text-amber-600 mb-2 text-center">Application pending approval</div>
-                        <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
+                        <Link href={`/groups/${group.id}`}>
+                          <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -482,7 +487,9 @@ export default function GroupsPage() {
                       </div>
 
                       <div className="mt-4">
-                        <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
+                        <Link href={`/groups/${group.id}`}>
+                          <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
+                        </Link>
                       </div>
                     </div>
                   </div>

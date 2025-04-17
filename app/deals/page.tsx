@@ -247,8 +247,8 @@ export default function DealsPage() {
               filteredDeals.map((deal) => (
                 <div key={deal.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
                   <div className="p-6">
-                    <div className="grid grid-cols-12 gap-4 items-center">
-                      <div className="col-span-12 md:col-span-4 flex items-center gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-start lg:items-center">
+                      <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex items-center gap-4 mb-4 lg:mb-0">
                         <div className="w-16 h-16 bg-black rounded-lg overflow-hidden flex-shrink-0">
                           <Image
                             src={deal.image || "/placeholder.svg"}
@@ -276,7 +276,7 @@ export default function DealsPage() {
                         </div>
                       </div>
 
-                      <div className="col-span-6 md:col-span-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <div className="text-sm text-gray-500">Deal Type</div>
                         <div className="font-semibold">{deal.type}</div>
                         <div className="text-xs text-gray-500">
@@ -288,7 +288,7 @@ export default function DealsPage() {
                         </div>
                       </div>
 
-                      <div className="col-span-6 md:col-span-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <div className="text-sm text-gray-500">Funding</div>
                         <div className="font-semibold">${deal.funding.raised.toLocaleString()}</div>
                         <div className="text-xs text-gray-500">of ${deal.funding.goal.toLocaleString()} total</div>
@@ -300,13 +300,13 @@ export default function DealsPage() {
                         </div>
                       </div>
 
-                      <div className="col-span-6 md:col-span-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <div className="text-sm text-gray-500">Revenue Share</div>
                         <div className="font-semibold">{deal.revenueShare}</div>
                         <div className="text-xs text-gray-500">Min: ${deal.minimumInvestment.toLocaleString()}</div>
                       </div>
 
-                      <div className="col-span-6 md:col-span-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <div className="text-sm text-gray-500">Deadline</div>
                         <div className="font-semibold">{deal.deadline}</div>
                         <div className="text-xs text-gray-500">Closes on {deal.closeDate}</div>
@@ -315,8 +315,10 @@ export default function DealsPage() {
 
                     <div className="mt-4 border-t pt-4">
                       <p className="text-gray-600 text-sm mb-4">{deal.description}</p>
-                      <div className="flex justify-end">
-                        <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]">View Deal</Button>
+                      <div className="flex justify-center sm:justify-end">
+                        <Button className="w-full sm:w-auto bg-[#0f172a] text-white hover:bg-[#1e293b]">
+                          View Deal
+                        </Button>
                       </div>
                     </div>
                   </div>

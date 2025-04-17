@@ -114,7 +114,13 @@ export default function Header() {
           <Link href="/settings/wallet" className="mr-4 text-sm">
             ${user?.walletBalance || 0} USDC
           </Link>
-          <button type="button" className="text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button
+            type="button"
+            className="text-white p-2 rounded-md hover:bg-gray-800"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+          >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
@@ -122,7 +128,7 @@ export default function Header() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden py-4 px-4 bg-[#0f172a] border-t border-gray-800">
+        <div className="md:hidden py-4 px-4 bg-[#0f172a] border-t border-gray-800 animate-in slide-in-from-top duration-300">
           <nav className="flex flex-col space-y-4">
             <Link
               href="/deals"

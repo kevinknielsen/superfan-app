@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ChevronDown } from "lucide-react"
@@ -10,9 +11,9 @@ import ProtectedRoute from "@/components/protected-route"
 // Mock data for investment groups (record labels and curators)
 const mockInvestmentGroups = [
   {
-    id: 1,
+    id: "1",
     name: "Original Works",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/surprised-owl.png",
     type: "Record Label",
     tags: ["Indie Pop", "Electronic"],
     owner: {
@@ -25,9 +26,9 @@ const mockInvestmentGroups = [
     totalRaised: "$125K",
   },
   {
-    id: 2,
+    id: "2",
     name: "Phat Trax",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/physical-therapy-session.png",
     type: "Record Label",
     tags: ["Hip-Hop", "R&B", "Soul"],
     owner: {
@@ -39,9 +40,9 @@ const mockInvestmentGroups = [
     totalRaised: "$250K",
   },
   {
-    id: 3,
+    id: "3",
     name: "Coop Records",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/abstract-color-run.png",
     type: "Curator",
     tags: ["Electronic", "Ambient"],
     owner: {
@@ -66,7 +67,7 @@ export default function BrowsePage() {
             <div className="max-w-6xl mx-auto">
               <h1 className="text-3xl font-bold mb-6">Finish setting up your account to invest with Superfan One</h1>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 <div className="relative">
                   <div className="absolute -left-1 top-0 w-12 h-12 rounded-full border-2 border-gray-500 flex items-center justify-center bg-green-500">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -98,9 +99,11 @@ export default function BrowsePage() {
                       Browse record labels and curators to discover investment opportunities. Each group sources and
                       manages their own deals.
                     </p>
-                    <button className="mt-4 text-white border border-gray-600 rounded px-4 py-1 text-sm hover:bg-gray-800">
-                      Browse investment groups
-                    </button>
+                    <Link href="/groups">
+                      <button className="mt-4 text-white border border-gray-600 rounded px-4 py-1 text-sm hover:bg-gray-800">
+                        Browse investment groups
+                      </button>
+                    </Link>
                   </div>
                 </div>
 
@@ -130,9 +133,11 @@ export default function BrowsePage() {
                       Add USDC to your wallet to invest in deals. You control your own private keys, Superfan One does
                       not have access to your funds.
                     </p>
-                    <button className="mt-4 text-white border border-gray-600 rounded px-4 py-1 text-sm hover:bg-gray-800 underline">
-                      Fund Superfan wallet
-                    </button>
+                    <Link href="/settings/wallet">
+                      <button className="mt-4 text-white border border-gray-600 rounded px-4 py-1 text-sm hover:bg-gray-800 underline">
+                        Fund Superfan wallet
+                      </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -147,14 +152,16 @@ export default function BrowsePage() {
               <h2 className="text-2xl font-bold">
                 See <span className="font-normal">1 available deal</span>
               </h2>
-              <Button variant="link" className="text-blue-600">
-                Browse all deals
-              </Button>
+              <Link href="/deals">
+                <Button variant="link" className="text-blue-600">
+                  Browse all deals
+                </Button>
+              </Link>
             </div>
 
             <div className="bg-white border rounded-lg overflow-hidden">
-              <div className="grid grid-cols-12 gap-4 p-4 items-center">
-                <div className="col-span-4 md:col-span-3 flex items-center gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 p-4 items-start lg:items-center">
+                <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-4">
                   <div className="w-16 h-16 bg-black rounded-lg overflow-hidden flex-shrink-0">
                     <Image
                       src="/placeholder.svg?height=64&width=64"
@@ -177,43 +184,47 @@ export default function BrowsePage() {
                           className="object-cover"
                         />
                       </div>
-                      <span>Coop Records</span>
+                      <Link href="/groups/3" className="hover:underline">
+                        <span>Coop Records</span>
+                      </Link>
                     </div>
                   </div>
                 </div>
 
-                <div className="col-span-4 md:col-span-2">
+                <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                   <div className="text-sm text-gray-500">Deal Type</div>
                   <div className="font-semibold">SAFT</div>
                   <div className="text-xs text-gray-500">Pre-release financing</div>
                 </div>
 
-                <div className="col-span-4 md:col-span-2">
+                <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                   <div className="text-sm text-gray-500">Funding</div>
                   <div className="font-semibold">$25,757</div>
                   <div className="text-xs text-gray-500">of $50,000 total</div>
                 </div>
 
-                <div className="col-span-4 md:col-span-2">
+                <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                   <div className="text-sm text-gray-500">Revenue Share</div>
                   <div className="flex items-center">
                     <span className="font-semibold">25% for 3 years</span>
                   </div>
                 </div>
 
-                <div className="col-span-4 md:col-span-2">
+                <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                   <div className="text-sm text-gray-500">Deadline</div>
                   <div className="font-semibold">4 days remaining</div>
                   <div className="text-xs text-gray-500">Closes on March 31, 2025</div>
                 </div>
 
-                <div className="col-span-4 md:col-span-1 flex justify-end gap-2">
+                <div className="col-span-1 sm:col-span-2 lg:col-span-1 flex justify-end gap-2 mt-4 sm:mt-0">
                   <Button variant="outline" size="sm" className="p-2 h-8 w-8">
                     <ChevronDown className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="p-2 h-8 w-8">
-                    →
-                  </Button>
+                  <Link href="/deals/1">
+                    <Button variant="outline" size="sm" className="p-2 h-8 w-8">
+                      →
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -227,9 +238,11 @@ export default function BrowsePage() {
               <h2 className="text-2xl font-bold">
                 See our <span className="font-normal">trending groups</span>
               </h2>
-              <Button variant="link" className="text-blue-600">
-                Browse all groups
-              </Button>
+              <Link href="/groups">
+                <Button variant="link" className="text-blue-600">
+                  Browse all groups
+                </Button>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -289,15 +302,11 @@ export default function BrowsePage() {
                     </div>
 
                     <div className="mt-4">
-                      {group.id === 3 ? (
+                      <Link href={`/groups/${group.id}`}>
                         <Button variant="outline" className="w-full">
-                          View Deals
+                          View Group
                         </Button>
-                      ) : (
-                        <Button variant="outline" className="w-full">
-                          View Investment Group
-                        </Button>
-                      )}
+                      </Link>
                     </div>
                   </div>
                 </div>

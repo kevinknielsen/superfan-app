@@ -65,10 +65,16 @@ export default function DashboardPage() {
           </div>
 
           <Tabs defaultValue="portfolio" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
-              <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-              <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-              <TabsTrigger value="royalties">Royalty Tracking</TabsTrigger>
+            <TabsList className="flex w-full overflow-x-auto mb-8">
+              <TabsTrigger value="portfolio" className="flex-1 text-xs sm:text-sm">
+                Portfolio
+              </TabsTrigger>
+              <TabsTrigger value="opportunities" className="flex-1 text-xs sm:text-sm">
+                Opportunities
+              </TabsTrigger>
+              <TabsTrigger value="royalties" className="flex-1 text-xs sm:text-sm">
+                Royalties
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="portfolio">
@@ -127,8 +133,8 @@ export default function DashboardPage() {
 
               <h2 className="text-xl font-bold mt-8 mb-4">Your Music Investments</h2>
               <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <table className="w-full min-w-[800px]">
                     <thead>
                       <tr className="bg-gray-50">
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

@@ -108,6 +108,24 @@ export default function LoginPage() {
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
+
+          {/* Development bypass button - remove before production */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await login("dev@example.com", "password123")
+                  router.push(redirectPath)
+                } catch (err) {
+                  console.error("Dev bypass failed:", err)
+                }
+              }}
+              className="px-4 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md text-sm hover:bg-yellow-200"
+            >
+              Development Bypass (Remove in Production)
+            </button>
+          </div>
         </div>
       </div>
     </div>
