@@ -5,105 +5,102 @@ import { useAuth } from "@/contexts/auth-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import { Lock, Unlock, Calendar, Music, Ticket, Gift, ShoppingBag, MessageCircle } from "lucide-react"
 
 export default function UnlocksPage() {
   const { user, isAuthenticated } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
-  const [unlocks, setUnlocks] = useState([])
+  const [unlocks, setUnlocks] = useState<any[]>([])
   const [tokenHoldings, setTokenHoldings] = useState({
     total: 0,
-    artists: [],
+    artists: [] as { name: string; tokens: number; image: string }[],
   })
 
-  // Load data
   useEffect(() => {
-    const loadData = () => {
-      // Simulate API call
-      setTimeout(() => {
-        setTokenHoldings({
-          total: 12,
-          artists: [
-            { name: "Taylor Swift", tokens: 5, image: "/placeholder-avatars/avatar-1.png" },
-            { name: "Drake", tokens: 3, image: "/placeholder-avatars/avatar-2.png" },
-            { name: "Beyoncé", tokens: 4, image: "/placeholder-avatars/avatar-3.png" },
-          ],
-        })
+    // Simulate loading data
+    const timer = setTimeout(() => {
+      setTokenHoldings({
+        total: 12,
+        artists: [
+          { name: "Taylor Swift", tokens: 5, image: "/placeholder-avatars/avatar-1.png" },
+          { name: "Drake", tokens: 3, image: "/placeholder-avatars/avatar-2.png" },
+          { name: "Beyoncé", tokens: 4, image: "/placeholder-avatars/avatar-3.png" },
+        ],
+      })
 
-        setUnlocks([
-          {
-            id: 1,
-            title: "Exclusive Merch Drop",
-            description: "Limited edition hoodie only available to token holders",
-            requirement: 2,
-            type: "merch",
-            status: "available",
-            artist: "Taylor Swift",
-            image: "/placeholder-deals/deal-1.png",
-            date: "May 15, 2025",
-          },
-          {
-            id: 2,
-            title: "Early Access: New Single",
-            description: "Listen to the new single 48 hours before public release",
-            requirement: 1,
-            type: "music",
-            status: "available",
-            artist: "Drake",
-            image: "/placeholder-deals/deal-2.png",
-            date: "April 28, 2025",
-          },
-          {
-            id: 3,
-            title: "Virtual Q&A Session",
-            description: "Join an exclusive online Q&A with the artist",
-            requirement: 3,
-            type: "event",
-            status: "available",
-            artist: "Beyoncé",
-            image: "/placeholder-deals/deal-3.png",
-            date: "June 5, 2025",
-          },
-          {
-            id: 4,
-            title: "Pre-sale Concert Tickets",
-            description: "Get access to concert tickets before they go on sale to the public",
-            requirement: 2,
-            type: "tickets",
-            status: "available",
-            artist: "Taylor Swift",
-            image: "/placeholder-deals/deal-4.png",
-            date: "July 10, 2025",
-          },
-          {
-            id: 5,
-            title: "Signed Vinyl",
-            description: "Receive a signed vinyl of the latest album",
-            requirement: 5,
-            type: "merch",
-            status: "locked",
-            artist: "Drake",
-            image: "/placeholder-deals/deal-5.png",
-            date: "August 20, 2025",
-          },
-          {
-            id: 6,
-            title: "Behind-the-Scenes Content",
-            description: "Exclusive access to behind-the-scenes footage from the latest music video",
-            requirement: 4,
-            type: "content",
-            status: "locked",
-            artist: "Beyoncé",
-            image: "/placeholder-groups/group-1.png",
-            date: "May 30, 2025",
-          },
-        ])
+      setUnlocks([
+        {
+          id: 1,
+          title: "Exclusive Merch Drop",
+          description: "Limited edition hoodie only available to token holders",
+          requirement: 2,
+          type: "merch",
+          status: "available",
+          artist: "Taylor Swift",
+          image: "/placeholder-deals/deal-1.png",
+          date: "May 15, 2025",
+        },
+        {
+          id: 2,
+          title: "Early Access: New Single",
+          description: "Listen to the new single 48 hours before public release",
+          requirement: 1,
+          type: "music",
+          status: "available",
+          artist: "Drake",
+          image: "/placeholder-deals/deal-2.png",
+          date: "April 28, 2025",
+        },
+        {
+          id: 3,
+          title: "Virtual Q&A Session",
+          description: "Join an exclusive online Q&A with the artist",
+          requirement: 3,
+          type: "event",
+          status: "available",
+          artist: "Beyoncé",
+          image: "/placeholder-deals/deal-3.png",
+          date: "June 5, 2025",
+        },
+        {
+          id: 4,
+          title: "Pre-sale Concert Tickets",
+          description: "Get access to concert tickets before they go on sale to the public",
+          requirement: 2,
+          type: "tickets",
+          status: "available",
+          artist: "Taylor Swift",
+          image: "/placeholder-deals/deal-4.png",
+          date: "July 10, 2025",
+        },
+        {
+          id: 5,
+          title: "Signed Vinyl",
+          description: "Receive a signed vinyl of the latest album",
+          requirement: 5,
+          type: "merch",
+          status: "locked",
+          artist: "Drake",
+          image: "/placeholder-deals/deal-5.png",
+          date: "August 20, 2025",
+        },
+        {
+          id: 6,
+          title: "Behind-the-Scenes Content",
+          description: "Exclusive access to behind-the-scenes footage from the latest music video",
+          requirement: 4,
+          type: "content",
+          status: "locked",
+          artist: "Beyoncé",
+          image: "/placeholder-groups/group-1.png",
+          date: "May 30, 2025",
+        },
+      ])
+      setIsLoading(false)
+    }, 1000)
 
-        setIsLoading(false)
-      }, 1000)
-    }
-
-    loadData()
+    return () => clearTimeout(timer)
   }, [])
 
   if (!isAuthenticated) {
@@ -118,7 +115,7 @@ export default function UnlocksPage() {
     )
   }
 
-  const getTypeIcon = (type) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case "merch":
         return <ShoppingBag className="h-4 w-4" />
@@ -166,14 +163,8 @@ export default function UnlocksPage() {
             <div className="flex flex-wrap gap-4 mt-4">
               {tokenHoldings.artists.map((artist, index) => (
                 <div key={index} className="flex items-center bg-gray-50 rounded-full px-3 py-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden mr-2">
-                    <img
-                      src={artist.image || "/placeholder.svg"}
-                      alt={artist.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
+                  <UserAvatar src={artist.image} name={artist.name} size={32} />
+                  <div className="ml-2">
                     <p className="text-sm font-medium">{artist.name}</p>
                     <p className="text-xs text-gray-600">{artist.tokens} tokens</p>
                   </div>
@@ -224,7 +215,7 @@ export default function UnlocksPage() {
   )
 }
 
-function UnlockCard({ unlock }) {
+function UnlockCard({ unlock }: { unlock: any }) {
   const isLocked = unlock.status === "locked"
 
   return (

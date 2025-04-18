@@ -8,8 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { MoreVertical, ArrowLeft, ExternalLink, Camera } from "lucide-react"
 import ProtectedRoute from "@/components/protected-route"
 
-// Mock data...
-
 // Update the mockInvestmentGroups array to use the placeholder images
 const mockInvestmentGroups = [
   {
@@ -117,7 +115,6 @@ export default function GroupDetailPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        {/* Component JSX... */}
         <div className="container mx-auto px-4 py-4">
           {/* Header with back button and actions */}
           <div className="flex justify-between items-center mb-6">

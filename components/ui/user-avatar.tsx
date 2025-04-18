@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { User } from "lucide-react"
 import { getInitials } from "@/lib/image-utils"
 
@@ -14,7 +15,7 @@ export function UserAvatar({ src, name, size = 40, className = "" }: UserAvatarP
   if (src) {
     return (
       <div className={`overflow-hidden rounded-full ${className}`} style={{ width: size, height: size }}>
-        <img
+        <Image
           src={src || "/placeholder.svg"}
           alt={name || "User avatar"}
           width={size}
