@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,91 +17,96 @@ export default function UnlocksPage() {
     artists: [] as { name: string; tokens: number; image: string }[],
   })
 
+  // Use useCallback instead of useEffectEvent
+  const loadData = useCallback(() => {
+    setTokenHoldings({
+      total: 12,
+      artists: [
+        { name: "Taylor Swift", tokens: 5, image: "/placeholder-avatars/avatar-1.png" },
+        { name: "Drake", tokens: 3, image: "/placeholder-avatars/avatar-2.png" },
+        { name: "Beyoncé", tokens: 4, image: "/placeholder-avatars/avatar-3.png" },
+      ],
+    })
+
+    setUnlocks([
+      {
+        id: 1,
+        title: "Exclusive Merch Drop",
+        description: "Limited edition hoodie only available to token holders",
+        requirement: 2,
+        type: "merch",
+        status: "available",
+        artist: "Taylor Swift",
+        image: "/placeholder-deals/deal-1.png",
+        date: "May 15, 2025",
+      },
+      {
+        id: 2,
+        title: "Early Access: New Single",
+        description: "Listen to the new single 48 hours before public release",
+        requirement: 1,
+        type: "music",
+        status: "available",
+        artist: "Drake",
+        image: "/placeholder-deals/deal-2.png",
+        date: "April 28, 2025",
+      },
+      {
+        id: 3,
+        title: "Virtual Q&A Session",
+        description: "Join an exclusive online Q&A with the artist",
+        requirement: 3,
+        type: "event",
+        status: "available",
+        artist: "Beyoncé",
+        image: "/placeholder-deals/deal-3.png",
+        date: "June 5, 2025",
+      },
+      {
+        id: 4,
+        title: "Pre-sale Concert Tickets",
+        description: "Get access to concert tickets before they go on sale to the public",
+        requirement: 2,
+        type: "tickets",
+        status: "available",
+        artist: "Taylor Swift",
+        image: "/placeholder-deals/deal-4.png",
+        date: "July 10, 2025",
+      },
+      {
+        id: 5,
+        title: "Signed Vinyl",
+        description: "Receive a signed vinyl of the latest album",
+        requirement: 5,
+        type: "merch",
+        status: "locked",
+        artist: "Drake",
+        image: "/placeholder-deals/deal-5.png",
+        date: "August 20, 2025",
+      },
+      {
+        id: 6,
+        title: "Behind-the-Scenes Content",
+        description: "Exclusive access to behind-the-scenes footage from the latest music video",
+        requirement: 4,
+        type: "content",
+        status: "locked",
+        artist: "Beyoncé",
+        image: "/placeholder-groups/group-1.png",
+        date: "May 30, 2025",
+      },
+    ])
+    setIsLoading(false)
+  }, [])
+
   useEffect(() => {
     // Simulate loading data
     const timer = setTimeout(() => {
-      setTokenHoldings({
-        total: 12,
-        artists: [
-          { name: "Taylor Swift", tokens: 5, image: "/placeholder-avatars/avatar-1.png" },
-          { name: "Drake", tokens: 3, image: "/placeholder-avatars/avatar-2.png" },
-          { name: "Beyoncé", tokens: 4, image: "/placeholder-avatars/avatar-3.png" },
-        ],
-      })
-
-      setUnlocks([
-        {
-          id: 1,
-          title: "Exclusive Merch Drop",
-          description: "Limited edition hoodie only available to token holders",
-          requirement: 2,
-          type: "merch",
-          status: "available",
-          artist: "Taylor Swift",
-          image: "/placeholder-deals/deal-1.png",
-          date: "May 15, 2025",
-        },
-        {
-          id: 2,
-          title: "Early Access: New Single",
-          description: "Listen to the new single 48 hours before public release",
-          requirement: 1,
-          type: "music",
-          status: "available",
-          artist: "Drake",
-          image: "/placeholder-deals/deal-2.png",
-          date: "April 28, 2025",
-        },
-        {
-          id: 3,
-          title: "Virtual Q&A Session",
-          description: "Join an exclusive online Q&A with the artist",
-          requirement: 3,
-          type: "event",
-          status: "available",
-          artist: "Beyoncé",
-          image: "/placeholder-deals/deal-3.png",
-          date: "June 5, 2025",
-        },
-        {
-          id: 4,
-          title: "Pre-sale Concert Tickets",
-          description: "Get access to concert tickets before they go on sale to the public",
-          requirement: 2,
-          type: "tickets",
-          status: "available",
-          artist: "Taylor Swift",
-          image: "/placeholder-deals/deal-4.png",
-          date: "July 10, 2025",
-        },
-        {
-          id: 5,
-          title: "Signed Vinyl",
-          description: "Receive a signed vinyl of the latest album",
-          requirement: 5,
-          type: "merch",
-          status: "locked",
-          artist: "Drake",
-          image: "/placeholder-deals/deal-5.png",
-          date: "August 20, 2025",
-        },
-        {
-          id: 6,
-          title: "Behind-the-Scenes Content",
-          description: "Exclusive access to behind-the-scenes footage from the latest music video",
-          requirement: 4,
-          type: "content",
-          status: "locked",
-          artist: "Beyoncé",
-          image: "/placeholder-groups/group-1.png",
-          date: "May 30, 2025",
-        },
-      ])
-      setIsLoading(false)
+      loadData()
     }, 1000)
 
     return () => clearTimeout(timer)
-  }, [])
+  }, [loadData])
 
   if (!isAuthenticated) {
     return (
