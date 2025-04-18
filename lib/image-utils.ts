@@ -1,29 +1,33 @@
-// Get a random avatar image
-export function getRandomAvatar() {
-  const avatarNumber = Math.floor(Math.random() * 5) + 1
-  return `/placeholder-avatars/avatar-${avatarNumber}.png`
-}
-
-// Get a random group image
-export function getRandomGroupImage() {
-  const groupNumber = Math.floor(Math.random() * 5) + 1
-  return `/placeholder-groups/group-${groupNumber}.png`
-}
-
-// Get a random deal image
-export function getRandomDealImage() {
-  const dealNumber = Math.floor(Math.random() * 5) + 1
-  return `/placeholder-deals/deal-${dealNumber}.png`
-}
-
-// Get initials from a name
 export function getInitials(name: string): string {
-  if (!name) return ""
+  return name
+    .split(" ")
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase()
+    .substring(0, 2)
+}
 
-  const parts = name.split(" ")
-  if (parts.length === 1) {
-    return parts[0].charAt(0).toUpperCase()
-  }
+export function getRandomColor(): string {
+  const colors = [
+    "bg-red-500",
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-yellow-500",
+    "bg-purple-500",
+    "bg-pink-500",
+    "bg-indigo-500",
+    "bg-teal-500",
+    "bg-orange-500",
+    "bg-cyan-500",
+  ]
 
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+  return colors[Math.floor(Math.random() * colors.length)]
+}
+
+export function getAspectRatio(width: number, height: number): string {
+  return `${width} / ${height}`
+}
+
+export function getImagePlaceholder(width: number, height: number, text = ""): string {
+  return `https://via.placeholder.com/${width}x${height}?text=${encodeURIComponent(text)}`
 }

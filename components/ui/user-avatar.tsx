@@ -1,38 +1,36 @@
-"use client"
-
-import * as React from "react"
-
-import { cn } from "@/lib/utils"
+import { User } from "lucide-react"
 import { getInitials } from "@/lib/image-utils"
 
-export interface UserAvatarProps extends React.HTMLAttributes<HTMLDivElement> {
-  name?: string
+interface UserAvatarProps {
   src?: string
+  name?: string
   size?: number
+  className?: string
 }
 
-const UserAvatar = React.forwardRef<HTMLDivElement, UserAvatarProps>(
-  ({ className, name, src, size = 40, ...props }, ref) => {
-    const initials = name ? getInitials(name) : ""
+export function UserAvatar({ src, name, size = 40, className = "" }: UserAvatarProps) {
+  const initials = name ? getInitials(name) : ""
 
+  if (src) {
     return (
-      <div
-        className={cn("relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted", className)}
-        style={{ width: size, height: size }}
-        ref={ref}
-        {...props}
-      >
-        {src ? (
-          <img src={src || "/placeholder.svg"} alt={name} className="aspect-square h-full w-full" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center text-base font-medium text-muted-foreground">
-            {initials}
-          </span>
-        )}
+      <div className={`overflow-hidden rounded-full ${className}`} style={{ width: size, height: size }}>
+        <img
+          src={src || "/placeholder.svg"}
+          alt={name || "User avatar"}
+          width={size}
+          height={size}
+          className="object-cover"
+        />
       </div>
     )
-  },
-)
-UserAvatar.displayName = "UserAvatar"
+  }
 
-export { UserAvatar }
+  return (
+    <div
+      className={`bg-orange-500 rounded-full flex items-center justify-center text-white ${className}`}
+      style={{ width: size, height: size }}
+    >
+      {initials || <User size={size * 0.5} />}
+    </div>
+  )
+}

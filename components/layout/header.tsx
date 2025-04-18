@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation"
 import { Menu, X, LogOut, ExternalLink } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { UserAvatar } from "@/components/ui/user-avatar"
-import Image from "next/image"
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -43,11 +42,9 @@ export default function Header() {
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center space-x-8">
           <Link href="/browse" className="flex items-center">
-            <Image
+            <img
               src="/superfan-logo-white.png"
               alt="Superfan Logo"
-              width={220}
-              height={40}
               className="h-10 w-auto object-contain object-left"
             />
             <span className="text-xs text-gray-400 bg-gray-700 px-1 rounded ml-2">BETA</span>
