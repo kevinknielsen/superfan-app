@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Filter } from "lucide-react"
 import ProtectedRoute from "@/components/protected-route"
 
+// Mock data...
 // Update the mockInvestmentGroups array to use the placeholder images
 const mockInvestmentGroups = [
   {
@@ -113,6 +114,7 @@ export default function GroupsPage() {
   const [genreFilter, setGenreFilter] = useState("all")
   const [sortBy, setSortBy] = useState("newest")
 
+  // Component logic...
   // Derive unique group types from data
   const groupTypes = useMemo(() => {
     const types = new Set(mockInvestmentGroups.map((group) => group.type))
@@ -167,6 +169,7 @@ export default function GroupsPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
+        {/* Component JSX... */}
         <div className="container mx-auto px-4 py-8">
           {/* Header section with title and action button - matching dashboard style */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
