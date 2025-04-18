@@ -6,18 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Filter } from "lucide-react"
 import ProtectedRoute from "@/components/protected-route"
 
-// Mock data for deals
+// Update the mockDeals array to use the placeholder images
 const mockDeals = [
   {
     id: 1,
     name: "Neon Dreams EP",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/placeholder-deals/deal-1.png",
     type: "SAFT",
     description:
       "Pre-release financing for David Park's upcoming EP with strong streaming potential and crossover appeal",
     group: {
       name: "Original Works",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-1.png",
     },
     funding: {
       raised: 25757,
@@ -33,12 +33,12 @@ const mockDeals = [
   {
     id: 2,
     name: "Summer Vibes Collection",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/placeholder-deals/deal-2.png",
     type: "RT Token",
     description: "Tokenized catalog of summer-themed hip-hop releases from established Phat Trax artists",
     group: {
       name: "Phat Trax",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-2.png",
     },
     funding: {
       raised: 75000,
@@ -54,12 +54,12 @@ const mockDeals = [
   {
     id: 3,
     name: "Ambient Futures",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/placeholder-deals/deal-3.png",
     type: "SAFT",
     description: "Future release slate of ambient electronic music from Coop Records' roster of innovative producers",
     group: {
       name: "Coop Records",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-3.png",
     },
     funding: {
       raised: 45000,
@@ -75,12 +75,12 @@ const mockDeals = [
   {
     id: 4,
     name: "Indie Anthology",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/placeholder-deals/deal-4.png",
     type: "Catalog",
     description: "Established indie rock catalog with consistent streaming performance and sync licensing potential",
     group: {
       name: "Original Works",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-1.png",
     },
     funding: {
       raised: 120000,
@@ -96,12 +96,12 @@ const mockDeals = [
   {
     id: 5,
     name: "Beat Collective Vol. 2",
-    image: "/placeholder.svg?height=80&width=80",
+    image: "/placeholder-deals/deal-5.png",
     type: "RT Token",
     description: "Second volume of the successful beat collection featuring top producers from the Phat Trax roster",
     group: {
       name: "Phat Trax",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-2.png",
     },
     funding: {
       raised: 35000,

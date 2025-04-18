@@ -3,8 +3,10 @@
 import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { Menu, X, User, LogOut, ExternalLink } from "lucide-react"
+import { Menu, X, LogOut, ExternalLink } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+// Import the UserAvatar component
+import { UserAvatar } from "@/components/ui/user-avatar"
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -64,11 +66,10 @@ export default function Header() {
             <Link href="/settings/wallet" className="mr-4 text-sm hover:text-gray-300">
               Wallet • ${user?.walletBalance || 0} USDC
             </Link>
+            {/* Replace the avatar code with the UserAvatar component */}
             <div className="relative" ref={dropdownRef}>
               <button className="flex items-center" onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}>
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white">
-                  {user?.name?.charAt(0).toUpperCase() || <User size={16} />}
-                </div>
+                <UserAvatar src={user?.avatar} name={user?.name} size={32} />
               </button>
               {profileDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">

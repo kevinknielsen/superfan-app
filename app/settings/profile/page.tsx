@@ -1,7 +1,21 @@
+"use client"
+import { useAuth } from "@/contexts/auth-context"
+// Import the UserAvatar component
+import { UserAvatar } from "@/components/ui/user-avatar"
+
 export default function ProfilePage() {
+  const { user } = useAuth()
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Profile</h1>
+
+      {/* Profile Avatar */}
+      {/* Replace the avatar code with the UserAvatar component */}
+      <div className="mb-8 flex items-center gap-4">
+        <UserAvatar src={user?.avatar} name={user?.name} size={80} />
+        <button className="text-blue-600 hover:text-blue-800 font-medium">Change avatar</button>
+      </div>
 
       {/* Account Information */}
       <div className="mb-8">
@@ -13,7 +27,9 @@ export default function ProfilePage() {
               <h3 className="font-medium">Legal name</h3>
             </div>
             <div className="flex items-center">
-              <span className="text-gray-700 mr-4 text-sm sm:text-base">ALEX JAMES RODRIGUEZ</span>
+              <span className="text-gray-700 mr-4 text-sm sm:text-base">
+                {user?.name?.toUpperCase() || "ALEX JAMES RODRIGUEZ"}
+              </span>
               <button className="text-blue-600 hover:text-blue-800 font-medium">Edit</button>
             </div>
           </div>

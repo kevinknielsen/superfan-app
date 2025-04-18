@@ -13,12 +13,12 @@ const mockInvestmentGroups = [
   {
     id: "1",
     name: "Original Works",
-    image: "/surprised-owl.png",
+    image: "/placeholder-groups/group-1.png",
     type: "Record Label",
     tags: ["Indie Pop", "Electronic"],
     owner: {
       name: "@originalworks",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-1.png",
     },
     description:
       "Independent label specializing in indie pop and electronic music with a focus on emerging artists and innovative sounds.",
@@ -28,12 +28,12 @@ const mockInvestmentGroups = [
   {
     id: "2",
     name: "Phat Trax",
-    image: "/physical-therapy-session.png",
+    image: "/placeholder-groups/group-2.png",
     type: "Record Label",
     tags: ["Hip-Hop", "R&B", "Soul"],
     owner: {
       name: "@phattrax",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-2.png",
     },
     description: "Artist-owned label focused on hip-hop, R&B and soul music | Streaming: 50M+ monthly",
     activeDeals: 3,
@@ -42,12 +42,12 @@ const mockInvestmentGroups = [
   {
     id: "3",
     name: "Coop Records",
-    image: "/abstract-color-run.png",
+    image: "/placeholder-groups/group-3.png",
     type: "Curator",
     tags: ["Electronic", "Ambient"],
     owner: {
       name: "@cooprecords",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-3.png",
     },
     description: "Electronic and ambient music curator with a roster of innovative producers and composers",
     activeDeals: 4,
@@ -164,7 +164,7 @@ export default function BrowsePage() {
                 <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-4">
                   <div className="w-16 h-16 bg-black rounded-lg overflow-hidden flex-shrink-0">
                     <Image
-                      src="/placeholder.svg?height=64&width=64"
+                      src="/placeholder-deals/deal-1.png"
                       alt="Neon Dreams EP"
                       width={64}
                       height={64}
@@ -177,7 +177,7 @@ export default function BrowsePage() {
                       <span>Offered by</span>
                       <div className="w-5 h-5 bg-gray-200 rounded-full overflow-hidden mx-1">
                         <Image
-                          src="/placeholder.svg?height=20&width=20"
+                          src="/placeholder-avatars/avatar-3.png"
                           alt="Coop Records"
                           width={20}
                           height={20}

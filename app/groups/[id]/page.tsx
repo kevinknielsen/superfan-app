@@ -8,17 +8,17 @@ import { Badge } from "@/components/ui/badge"
 import { MoreVertical, ArrowLeft, ExternalLink, Camera } from "lucide-react"
 import ProtectedRoute from "@/components/protected-route"
 
-// Mock data for investment groups (record labels and curators)
+// Update the mockInvestmentGroups array to use the placeholder images
 const mockInvestmentGroups = [
   {
     id: "1",
     name: "Original Works",
-    image: "/surprised-owl.png",
+    image: "/placeholder-groups/group-1.png",
     type: "Record Label",
     tags: ["Indie Pop", "Electronic"],
     owner: {
       name: "@originalworks",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-1.png",
     },
     description:
       "Independent label specializing in indie pop and electronic music with a focus on emerging artists and innovative sounds.",
@@ -31,12 +31,12 @@ const mockInvestmentGroups = [
   {
     id: "2",
     name: "Phat Trax",
-    image: "/physical-therapy-session.png",
+    image: "/placeholder-groups/group-2.png",
     type: "Record Label",
     tags: ["Hip-Hop", "R&B", "Soul"],
     owner: {
       name: "@phattrax",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-2.png",
     },
     description: "Artist-owned label focused on hip-hop, R&B and soul music | Streaming: 50M+ monthly",
     activeDeals: 0,
@@ -48,12 +48,12 @@ const mockInvestmentGroups = [
   {
     id: "3",
     name: "Coop Records",
-    image: "/abstract-color-run.png",
+    image: "/placeholder-groups/group-3.png",
     type: "Curator",
     tags: ["Electronic", "Ambient"],
     owner: {
       name: "@cooprecords",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-3.png",
     },
     description: "Electronic and ambient music curator with a roster of innovative producers and composers",
     activeDeals: 0,
@@ -64,15 +64,15 @@ const mockInvestmentGroups = [
   },
 ]
 
-// Mock data for previous deals
+// Update the mockPreviousDeals array to use the placeholder images
 const mockPreviousDeals = [
   {
     id: "1",
     name: "Summer Beats EP",
-    image: "/musical-instruments-still-life.png",
+    image: "/placeholder-deals/deal-1.png",
     owner: {
       name: "@phattrax",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-2.png",
     },
     round: "Seed",
     fundedOn: "Jan 23",
@@ -80,10 +80,10 @@ const mockPreviousDeals = [
   {
     id: "2",
     name: "Ambient Collection",
-    image: "/forest-after-rain.png",
+    image: "/placeholder-deals/deal-2.png",
     owner: {
       name: "@cooprecords",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-3.png",
     },
     round: "Seed",
     fundedOn: "Dec 12",
@@ -91,10 +91,10 @@ const mockPreviousDeals = [
   {
     id: "3",
     name: "Indie Voices",
-    image: "/placeholder.svg?height=80&width=80&query=indie",
+    image: "/placeholder-deals/deal-3.png",
     owner: {
       name: "@originalworks",
-      avatar: "/placeholder.svg?height=24&width=24",
+      avatar: "/placeholder-avatars/avatar-1.png",
     },
     round: "The People",
     fundedOn: "Nov 5",

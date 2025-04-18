@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BarChart, PieChart, LineChart, ArrowUpRight, TrendingUp, DollarSign, Music, Activity } from "lucide-react"
 import ProtectedRoute from "@/components/protected-route"
+import Image from "next/image"
 
 export default function DashboardPage() {
   return (
@@ -160,7 +161,18 @@ export default function DashboardPage() {
                     <tbody className="divide-y divide-gray-200">
                       <tr>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium">David Park - "Neon Dreams" EP</div>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden mr-3">
+                              <Image
+                                src="/placeholder-deals/deal-1.png"
+                                alt="Neon Dreams EP"
+                                width={40}
+                                height={40}
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="font-medium">David Park - "Neon Dreams" EP</div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -182,7 +194,18 @@ export default function DashboardPage() {
                       </tr>
                       <tr>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium">Indie Label Collective - Q2 Releases</div>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden mr-3">
+                              <Image
+                                src="/placeholder-deals/deal-2.png"
+                                alt="Indie Label Collective"
+                                width={40}
+                                height={40}
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="font-medium">Indie Label Collective - Q2 Releases</div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
@@ -204,7 +227,18 @@ export default function DashboardPage() {
                       </tr>
                       <tr>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium">Elena Rodriguez - "Summer Nights" Single</div>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden mr-3">
+                              <Image
+                                src="/placeholder-deals/deal-3.png"
+                                alt="Summer Nights"
+                                width={40}
+                                height={40}
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="font-medium">Elena Rodriguez - "Summer Nights" Single</div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -245,7 +279,18 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-sm text-gray-500">Closing in 7 days</span>
                     </div>
-                    <CardTitle className="mt-2">Midnight Collective - "Echoes"</CardTitle>
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="w-10 h-10 rounded-md overflow-hidden">
+                        <Image
+                          src="/placeholder-deals/deal-4.png"
+                          alt="Midnight Collective"
+                          width={40}
+                          height={40}
+                          className="object-cover"
+                        />
+                      </div>
+                      <CardTitle>Midnight Collective - "Echoes"</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 mb-4">
@@ -284,7 +329,18 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-sm text-gray-500">Closing in 14 days</span>
                     </div>
-                    <CardTitle className="mt-2">Sarah James - "Horizon"</CardTitle>
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="w-10 h-10 rounded-md overflow-hidden">
+                        <Image
+                          src="/placeholder-deals/deal-5.png"
+                          alt="Sarah James"
+                          width={40}
+                          height={40}
+                          className="object-cover"
+                        />
+                      </div>
+                      <CardTitle>Sarah James - "Horizon"</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 mb-4">
@@ -324,7 +380,18 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-sm text-gray-500">Closing in 21 days</span>
                     </div>
-                    <CardTitle className="mt-2">Future Sounds Records - Q3 Releases</CardTitle>
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="w-10 h-10 rounded-md overflow-hidden">
+                        <Image
+                          src="/placeholder-deals/deal-1.png"
+                          alt="Future Sounds Records"
+                          width={40}
+                          height={40}
+                          className="object-cover"
+                        />
+                      </div>
+                      <CardTitle>Future Sounds Records - Q3 Releases</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 mb-4">

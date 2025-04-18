@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: email.split("@")[0],
         email,
         walletBalance: 0,
+        avatar: "/placeholder-avatars/avatar-1.png", // Add avatar URL
       }
 
       setUser(userData)
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name,
         email,
         walletBalance: 0,
+        avatar: "/placeholder-avatars/avatar-" + (Math.floor(Math.random() * 5) + 1) + ".png", // Random avatar
       }
 
       setUser(userData)
