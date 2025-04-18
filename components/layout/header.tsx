@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { Menu, X, LogOut, ExternalLink } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { UserAvatar } from "@/components/ui/user-avatar"
-import { SuperfanLogo } from "@/components/ui/superfan-logo"
+import Image from "next/image"
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -43,7 +43,13 @@ export default function Header() {
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center space-x-8">
           <Link href="/browse" className="flex items-center">
-            <SuperfanLogo className="h-10 w-auto" />
+            <Image
+              src="/superfan-logo-white.png"
+              alt="Superfan Logo"
+              width={220}
+              height={40}
+              className="h-10 w-auto object-contain object-left"
+            />
             <span className="text-xs text-gray-400 bg-gray-700 px-1 rounded ml-2">BETA</span>
           </Link>
 
@@ -53,6 +59,9 @@ export default function Header() {
             </Link>
             <Link href="/groups" className="text-gray-300 hover:text-white">
               Groups
+            </Link>
+            <Link href="/unlocks" className="text-gray-300 hover:text-white">
+              Unlocks
             </Link>
             <Link href="/dashboard" className="text-gray-300 hover:text-white">
               Portfolio
@@ -144,6 +153,13 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Groups
+            </Link>
+            <Link
+              href="/unlocks"
+              className="text-gray-300 hover:text-white py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Unlocks
             </Link>
             <Link
               href="/dashboard"
