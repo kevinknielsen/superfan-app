@@ -5,8 +5,8 @@ import { useState, useRef, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Menu, X, LogOut, ExternalLink } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-// Import the UserAvatar component
 import { UserAvatar } from "@/components/ui/user-avatar"
+import { SuperfanLogo } from "@/components/ui/superfan-logo"
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -42,9 +42,9 @@ export default function Header() {
     <header className="border-b border-gray-200 py-4 bg-[#0f172a] text-white sticky top-0 z-50">
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center space-x-8">
-          <Link href="/browse" className="font-bold text-xl flex items-center">
-            <span className="mr-2">SUPERFAN ONE</span>
-            <span className="text-xs text-gray-400 bg-gray-700 px-1 rounded">BETA</span>
+          <Link href="/browse" className="flex items-center">
+            <SuperfanLogo className="h-10 w-auto" />
+            <span className="text-xs text-gray-400 bg-gray-700 px-1 rounded ml-2">BETA</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">

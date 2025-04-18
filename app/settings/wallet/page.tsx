@@ -3,9 +3,17 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { MoreVertical, LinkIcon } from "lucide-react"
+import { NetworkSelector } from "@/components/ui/network-selector"
+import { DepositModal } from "@/components/ui/deposit-modal"
+import { SignMessage } from "@/components/ui/sign-message"
+import { WalletAddress } from "@/components/ui/wallet-address"
 
 export default function WalletPage() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [depositModalOpen, setDepositModalOpen] = useState(false)
+
+  // Mock wallet address - in a real app, this would come from your wallet connection
+  const walletAddress = "0x45f8218575059A717879F994D300C550dB6a6E"
 
   return (
     <div>
@@ -13,13 +21,18 @@ export default function WalletPage() {
 
       {/* Wallet Balance */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <div className="mb-6">
-          <h2 className="text-4xl font-bold mb-2">$0.00</h2>
-          <p className="text-gray-600">Ready to invest • USDC on Base</p>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-4xl font-bold mb-2">$0.00</h2>
+            <p className="text-gray-600">Ready to invest • USDC on Base</p>
+          </div>
+          <NetworkSelector />
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <Button className="bg-[#0f172a] hover:bg-[#1e293b]">Deposit</Button>
+          <Button className="bg-[#0f172a] hover:bg-[#1e293b]" onClick={() => setDepositModalOpen(true)}>
+            Deposit
+          </Button>
           <Button variant="outline">Withdraw</Button>
           <div className="relative ml-auto">
             <Button
@@ -46,6 +59,16 @@ export default function WalletPage() {
         </div>
       </div>
 
+      {/* Wallet Address Section */}
+      <div className="mb-8">
+        <WalletAddress address={walletAddress} />
+      </div>
+
+      {/* Sign Message Section */}
+      <div className="mb-8">
+        <SignMessage />
+      </div>
+
       {/* Claims from investment */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -64,6 +87,9 @@ export default function WalletPage() {
           </p>
         </div>
       </div>
+
+      {/* Deposit Modal */}
+      <DepositModal isOpen={depositModalOpen} onClose={() => setDepositModalOpen(false)} />
     </div>
   )
 }
