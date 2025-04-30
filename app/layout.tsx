@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <div className="bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-screen flex flex-col">
+          <div className="min-h-screen flex flex-col">
             {/* Background patterns and decorations */}
             <div className="fixed inset-0 -z-10">
               {/* Subtle grid pattern */}
@@ -45,9 +45,9 @@ export default function RootLayout({
             </div>
 
             {/* Main content */}
-            <div className="flex flex-col min-h-screen relative z-10">
+            <div className="flex flex-col min-h-screen">
               <Header />
-              <div className="flex-grow">{children}</div>
+              <main className="flex-1">{children}</main>
               <Footer />
             </div>
           </div>
