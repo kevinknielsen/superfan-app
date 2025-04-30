@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth"
 
 type User = {
   id: string
@@ -14,8 +15,8 @@ type AuthContextType = {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
-  signup: (name: string, email: string, password: string) => Promise<void>
+  login: () => Promise<void>
+  signup: () => Promise<void>
   logout: () => void
 }
 
@@ -26,34 +27,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
+  const { login: privyLogin, logout: privyLogout, authenticated, user: privyUser } = usePrivy()
+  const { wallets } = useWallets()
+
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem("superfan_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-      setIsAuthenticated(true)
-    }
-    setIsLoading(false)
-  }, [])
-
-  const login = async (email: string, password: string) => {
-    setIsLoading(true)
-    try {
-      // Mock API call - in a real app, this would be a fetch to your auth endpoint
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock user data
+    if (authenticated && privyUser) {
       const userData: User = {
-        id: "user_" + Math.random().toString(36).substr(2, 9),
-        name: email.split("@")[0],
-        email,
+        id: privyUser.id,
+        name: privyUser.email?.address || "Anonymous",
+        email: privyUser.email?.address || "",
         walletBalance: 0,
-        avatar: "/placeholder-avatars/avatar-1.png", // Add avatar URL
+        avatar: "/placeholder-avatars/avatar-1.png",
       }
-
       setUser(userData)
       setIsAuthenticated(true)
-      localStorage.setItem("superfan_user", JSON.stringify(userData))
+    } else {
+      setUser(null)
+      setIsAuthenticated(false)
+    }
+    setIsLoading(false)
+  }, [authenticated, privyUser])
+
+  const login = async () => {
+    setIsLoading(true)
+    try {
+      await privyLogin()
     } catch (error) {
       console.error("Login failed:", error)
       throw error
@@ -62,24 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async () => {
     setIsLoading(true)
     try {
-      // Mock API call - in a real app, this would be a fetch to your auth endpoint
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock user data
-      const userData: User = {
-        id: "user_" + Math.random().toString(36).substr(2, 9),
-        name,
-        email,
-        walletBalance: 0,
-        avatar: "/placeholder-avatars/avatar-" + (Math.floor(Math.random() * 5) + 1) + ".png", // Random avatar
-      }
-
-      setUser(userData)
-      setIsAuthenticated(true)
-      localStorage.setItem("superfan_user", JSON.stringify(userData))
+      await privyLogin()
     } catch (error) {
       console.error("Signup failed:", error)
       throw error
@@ -89,9 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
+    privyLogout()
     setUser(null)
     setIsAuthenticated(false)
-    localStorage.removeItem("superfan_user")
   }
 
   return (

@@ -155,7 +155,7 @@ yarn start
 Create a `.env.local` file in the root directory with the following variables:
 
 \`\`\`
-NEXT_PUBLIC_PRIVY_APP_ID=your-privy-app-id
+NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id_here
 \`\`\`
 
 ## Authentication

@@ -3,7 +3,9 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { PenLine, CheckCircle, AlertCircle } from "lucide-react"
+import { PenLine, CheckCircle, AlertCircle, Copy } from "lucide-react"
+import { useWallets } from "@privy-io/react-auth"
+import { ethers } from "ethers"
 
 export function SignMessage() {
   const [message, setMessage] = useState("")
@@ -11,10 +13,18 @@ export function SignMessage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const { wallets } = useWallets()
+  const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === "privy")
 
   const handleSign = async () => {
     if (!message.trim()) {
       setError("Please enter a message to sign")
+      return
+    }
+
+    if (!embeddedWallet) {
+      setError("No wallet connected")
       return
     }
 
@@ -24,21 +34,28 @@ export function SignMessage() {
     setSignature(null)
 
     try {
-      // In a real implementation, this would use the wallet's signing functionality
-      // For demo purposes, we'll simulate a signature after a short delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Generate a mock signature
-      const mockSignature = `0x${Array.from({ length: 130 }, () => Math.floor(Math.random() * 16).toString(16)).join(
-        "",
-      )}`
-
-      setSignature(mockSignature)
+      const provider = new ethers.BrowserProvider(await embeddedWallet.getEthereumProvider())
+      const signer = await provider.getSigner()
+      const signature = await signer.signMessage(message)
+      setSignature(signature)
       setSuccess(true)
-    } catch (err) {
-      setError("Failed to sign message. Please make sure your wallet is connected.")
+    } catch (err: any) {
+      console.error('SignMessage error:', err)
+      setError(
+        err?.message
+          ? `Failed to sign message: ${err.message}`
+          : 'Failed to sign message. Please make sure your wallet is connected.'
+      )
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleCopy = () => {
+    if (signature) {
+      navigator.clipboard.writeText(signature)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     }
   }
 
@@ -58,7 +75,7 @@ export function SignMessage() {
 
         <Button
           onClick={handleSign}
-          disabled={isLoading}
+          disabled={isLoading || !embeddedWallet}
           className="bg-blue-500 hover:bg-blue-600 text-white w-full sm:w-auto"
         >
           {isLoading ? (
@@ -94,17 +111,20 @@ export function SignMessage() {
         )}
 
         {success && signature && (
-          <div className="space-y-3">
-            <div className="bg-green-50 text-green-700 p-3 rounded-md flex items-center">
+          <div className="bg-green-50 text-green-700 p-3 rounded-md flex flex-col gap-2">
+            <div className="flex items-center mb-2">
               <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
               <span>Message signed successfully!</span>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Signature</label>
-              <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                <p className="text-sm font-mono text-gray-800 break-all">{signature}</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <code className="bg-white text-gray-800 p-2 rounded break-all text-xs flex-1">{signature}</code>
+              <button
+                onClick={handleCopy}
+                className="bg-white border border-gray-200 px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-gray-100"
+              >
+                {copied ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
             </div>
           </div>
         )}

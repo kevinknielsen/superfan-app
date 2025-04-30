@@ -1,67 +1,121 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { MoreVertical, LinkIcon } from "lucide-react"
 import { NetworkSelector } from "@/components/ui/network-selector"
 import { DepositModal } from "@/components/ui/deposit-modal"
 import { SignMessage } from "@/components/ui/sign-message"
 import { WalletAddress } from "@/components/ui/wallet-address"
+import { useWallets, useFundWallet } from "@privy-io/react-auth"
+import { formatEther } from "viem"
+import { useToast } from "@/components/ui/use-toast"
+import { ethers } from "ethers"
+import { base } from 'viem/chains'
 
 export default function WalletPage() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
-  const [depositModalOpen, setDepositModalOpen] = useState(false)
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
+  const [balance, setBalance] = useState<string>("0")
+  const { wallets } = useWallets()
+  const { toast } = useToast()
+  const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === "privy")
+  const { fundWallet } = useFundWallet()
 
-  // Mock wallet address - in a real app, this would come from your wallet connection
-  const walletAddress = "0x45f8218575059A717879F994D300C550dB6a6E"
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (embeddedWallet) {
+        try {
+          console.log('embeddedWallet:', embeddedWallet)
+          console.log('embeddedWallet.address:', embeddedWallet.address)
+          // Use Infura Base Mainnet RPC
+          const BASE_RPC_URL = `https://base-mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_PROJECT_ID}`
+          const provider = new ethers.JsonRpcProvider(BASE_RPC_URL)
+          const balance = await provider.getBalance(embeddedWallet.address)
+          console.log('Fetched balance (wei):', balance.toString())
+          setBalance(formatEther(balance))
+        } catch (error) {
+          console.error("Error fetching balance:", error)
+          toast({
+            title: "Error",
+            description: "Failed to fetch wallet balance",
+            variant: "destructive",
+          })
+        }
+      } else {
+        console.log('embeddedWallet is not available')
+      }
+    }
+
+    fetchBalance()
+  }, [embeddedWallet, toast])
+
+  const handleWithdraw = async () => {
+    if (!embeddedWallet) {
+      toast({
+        title: "Error",
+        description: "No wallet connected",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      // Implement withdrawal logic here
+      toast({
+        title: "Success",
+        description: "Withdrawal initiated",
+      })
+    } catch (error) {
+      console.error("Error withdrawing:", error)
+      toast({
+        title: "Error",
+        description: "Failed to initiate withdrawal",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleFund = () => {
+    if (embeddedWallet?.address) {
+      fundWallet(embeddedWallet.address, {
+        chain: base,
+        // asset: 'USDC', // Optional: or 'native-currency'
+        // amount: '25',  // Optional: string, or leave undefined for dashboard default
+      });
+    }
+  };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Wallet</h1>
+    <>
+      <h1 className="text-2xl font-bold mb-6">Wallet Settings</h1>
 
       {/* Wallet Balance */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h2 className="text-4xl font-bold mb-2">$0.00</h2>
-            <p className="text-gray-600">Ready to invest • USDC on Base</p>
-          </div>
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Balance</h2>
           <NetworkSelector />
         </div>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <Button className="bg-[#0f172a] hover:bg-[#1e293b]" onClick={() => setDepositModalOpen(true)}>
+        <p className="text-3xl font-bold mb-4">{Number(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETH</p>
+        <div className="flex gap-4">
+          <Button onClick={() => setIsDepositModalOpen(true)}>
             Deposit
           </Button>
-          <Button variant="outline">Withdraw</Button>
-          <div className="relative ml-auto">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-              aria-label="More options"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-            {moreMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10">
-                <button
-                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                  onClick={() => {
-                    setMoreMenuOpen(false)
-                  }}
-                >
-                  Export your private key
-                </button>
-              </div>
-            )}
-          </div>
+          <Button variant="outline" onClick={handleWithdraw}>
+            Withdraw
+          </Button>
+          <Button onClick={handleFund}>
+            Fund
+          </Button>
         </div>
       </div>
 
       {/* Wallet Address Section */}
-      <div className="mb-8">
-        <WalletAddress address={walletAddress} />
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4">Wallet Address</h2>
+        <p className="font-mono text-sm break-all">
+          {embeddedWallet?.address || "No wallet connected"}
+        </p>
       </div>
 
       {/* Sign Message Section */}
@@ -89,7 +143,13 @@ export default function WalletPage() {
       </div>
 
       {/* Deposit Modal */}
-      <DepositModal isOpen={depositModalOpen} onClose={() => setDepositModalOpen(false)} />
-    </div>
+      {embeddedWallet && (
+        <DepositModal
+          isOpen={isDepositModalOpen}
+          onClose={() => setIsDepositModalOpen(false)}
+          walletAddress={embeddedWallet.address}
+        />
+      )}
+    </>
   )
 }
