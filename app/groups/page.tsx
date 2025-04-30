@@ -106,7 +106,7 @@ const mockInvestmentGroups = [
   },
 ]
 
-export default function GroupsPage() {
+export default function CuratorsPage() {
   const [activeTab, setActiveTab] = useState("browse")
   const [showFilters, setShowFilters] = useState(false)
   const [groupTypeFilter, setGroupTypeFilter] = useState("all")
@@ -171,8 +171,8 @@ export default function GroupsPage() {
           {/* Header section with title and action button - matching dashboard style */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold">Groups</h1>
-              <p className="text-gray-600">Discover and join investment groups</p>
+              <h1 className="text-3xl font-bold">Curators</h1>
+              <p className="text-gray-600">Discover and join investment curators</p>
             </div>
             <div className="mt-4 md:mt-0">
               <Button
@@ -343,7 +343,7 @@ export default function GroupsPage() {
                 ))
               ) : (
                 <div className="col-span-3 bg-white rounded-lg shadow-sm p-12 text-center">
-                  <h3 className="text-lg font-medium text-gray-700">No groups match your filters</h3>
+                  <h3 className="text-lg font-medium text-gray-700">No curators match your filters</h3>
                   <p className="text-gray-500 mt-2">Try adjusting your filters to see more results.</p>
                 </div>
               )}
@@ -417,9 +417,9 @@ export default function GroupsPage() {
                 ))
               ) : (
                 <div className="col-span-3 bg-white rounded-lg shadow-sm p-12 text-center">
-                  <h3 className="text-lg font-medium text-gray-700">You don't have any pending applications</h3>
+                  <h3 className="text-lg font-medium text-gray-700">Browse curators and request to join to see pending applications here.</h3>
                   <p className="text-gray-500 mt-2">
-                    Browse groups and request to join to see pending applications here.
+                    Browse curators and request to join to see pending applications here.
                   </p>
                 </div>
               )}
@@ -492,8 +492,8 @@ export default function GroupsPage() {
                 ))
               ) : (
                 <div className="col-span-3 bg-white rounded-lg shadow-sm p-12 text-center">
-                  <h3 className="text-lg font-medium text-gray-700">You haven't joined any groups yet</h3>
-                  <p className="text-gray-500 mt-2">Browse groups and request to join to see your groups here.</p>
+                  <h3 className="text-lg font-medium text-gray-700">You haven't joined any curators yet</h3>
+                  <p className="text-gray-500 mt-2">Browse curators and request to join to see your curators here.</p>
                 </div>
               )}
             </div>

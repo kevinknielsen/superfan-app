@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { useCreateProject } from "@/contexts/create-project-context"
+import { useLaunchProject } from "@/contexts/launch-project-context"
 import { UserAvatar } from "@/components/ui/user-avatar"
 import { Check } from "lucide-react"
 
@@ -16,8 +16,8 @@ interface Step4Props {
   isLastStep: boolean
 }
 
-export default function Step4Financing({ onNext }: Step4Props) {
-  const { projectData, updateField, toggleCurator } = useCreateProject()
+export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
+  const { projectData, updateField, toggleCurator } = useLaunchProject()
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -85,6 +85,10 @@ export default function Step4Financing({ onNext }: Step4Props) {
     if (validateForm()) {
       onNext()
     }
+  }
+
+  const handleCuratorClick = (curatorId: string) => {
+    toggleCurator(curatorId)
   }
 
   const selectedCuratorsCount = projectData.selectedCurators.filter((curator) => curator.selected).length
@@ -209,29 +213,27 @@ export default function Step4Financing({ onNext }: Step4Props) {
               Choose which curators you'd like to pitch your project to for potential funding.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {projectData.selectedCurators.map((curator) => (
-                <div
+                <button
                   key={curator.id}
-                  className={`p-4 rounded-lg border ${
+                  onClick={() => handleCuratorClick(curator.id)}
+                  className={`flex items-center p-4 rounded-lg border ${
                     curator.selected ? "border-green-500 bg-green-50" : "border-gray-200"
-                  } cursor-pointer transition-all`}
-                  onClick={() => toggleCurator(curator.id)}
+                  } cursor-pointer transition-all hover:border-green-500 hover:bg-green-50/50`}
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 flex-1">
                     <UserAvatar src={curator.avatar} name={curator.name} size={40} />
-                    <div className="flex-1">
-                      <h4 className="font-medium">{curator.name}</h4>
-                    </div>
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        curator.selected ? "bg-green-500 text-white" : "bg-gray-100"
-                      }`}
-                    >
-                      {curator.selected && <Check className="w-4 h-4" />}
-                    </div>
+                    <span className="font-medium">{curator.name}</span>
                   </div>
-                </div>
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                    curator.selected 
+                      ? "border-green-500 bg-green-500 text-white" 
+                      : "border-gray-300"
+                  }`}>
+                    {curator.selected && <Check className="w-4 h-4" />}
+                  </div>
+                </button>
               ))}
             </div>
 
@@ -252,8 +254,11 @@ export default function Step4Financing({ onNext }: Step4Props) {
         </div>
       )}
 
-      <div className="pt-4">
-        <Button onClick={handleNext} className="w-full bg-[#0f172a] hover:bg-[#1e293b]">
+      <div className="pt-6 flex justify-between">
+        <Button variant="ghost" onClick={onPrevious}>
+          Back
+        </Button>
+        <Button onClick={handleNext} className="bg-[#0f172a] hover:bg-[#1e293b]">
           Continue to Review
         </Button>
       </div>

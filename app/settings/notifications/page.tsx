@@ -67,13 +67,13 @@ export default function NotificationsPage() {
 
       {/* Group Notifications */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Groups</h2>
+        <h2 className="text-xl font-semibold mb-4">Curators</h2>
 
         <div className="bg-white rounded-lg shadow divide-y">
           <div className="p-4 flex items-center justify-between">
             <div>
               <h3 className="font-medium">Group posts and activity</h3>
-              <p className="text-sm text-gray-500">Get notified about new posts and activity in your groups.</p>
+              <p className="text-sm text-gray-500">Get notified about new posts and activity in your curators.</p>
             </div>
             <Switch checked={notifications.groupPosts} onCheckedChange={() => handleToggle("groupPosts")} />
           </div>

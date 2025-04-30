@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent } from "@/components/ui/card"
-import { Plus, Trash2, AlertCircle, Users, User, Briefcase, DollarSign } from "lucide-react"
+import { Plus, Trash2, AlertCircle, Users, User, Briefcase, DollarSign, Mic, Music, Crown, Sparkles } from "lucide-react"
 import { useCreateProject } from "@/contexts/create-project-context"
+import { motion, AnimatePresence } from "framer-motion"
 
 // Define collaborator types and interfaces
 interface Collaborator {
@@ -18,6 +19,8 @@ interface Collaborator {
   walletAddress: string
   percentage: number
   color: string
+  avatar?: string
+  emoji?: string
 }
 
 interface CollaboratorCardProps {
@@ -27,6 +30,14 @@ interface CollaboratorCardProps {
   isSelected: boolean
   onSelect: () => void
   error?: Record<string, string>
+}
+
+// Role configuration
+const ROLES = {
+  Artist: { icon: <Music className="w-4 h-4" />, color: "#3B82F6", label: "Artist" },
+  Producer: { icon: <Mic className="w-4 h-4" />, color: "#10B981", label: "Producer" },
+  Mixer: { icon: <Sparkles className="w-4 h-4" />, color: "#8B5CF6", label: "Mixer" },
+  Curator: { icon: <Crown className="w-4 h-4" />, color: "#F59E0B", label: "Curator" },
 }
 
 // Color palette for collaborators
@@ -39,9 +50,126 @@ const COLORS = [
   "#EC4899", // pink
   "#06B6D4", // cyan
   "#F97316", // orange
+  "#14B8A6", // teal
+  "#6366F1", // indigo
+  "#D946EF", // fuchsia
+  "#F43F5E", // rose
 ]
 
-// CollaboratorCard component
+// Add color variations for roles
+const getRoleColor = (role: string, index: number) => {
+  const baseColor = ROLES[role as keyof typeof ROLES]?.color || ROLES.Artist.color
+  if (index === 0) return baseColor
+  
+  // Create variations of the base color for duplicate roles
+  const hueOffset = (index * 30) % 360
+  return `hsl(${parseInt(baseColor.slice(1), 16) + hueOffset}, 70%, 50%)`
+}
+
+// Add these styles to your global CSS file (styles/globals.css)
+const sliderStyles = `
+  .custom-range-slider {
+    @apply relative w-full h-2 bg-transparent appearance-none cursor-pointer z-10;
+  }
+  
+  .custom-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--range-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid white;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  .custom-range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .custom-range-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--range-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid white;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  .custom-range-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  }
+`
+
+// Update RangeSlider component
+const RangeSlider = memo(function RangeSlider({
+  value,
+  onChange,
+  min,
+  max,
+  color,
+  showValue = true,
+}: {
+  value: number
+  onChange: (value: number) => void
+  min: number
+  max: number
+  color: string
+  showValue?: boolean
+}) {
+  const [isChanging, setIsChanging] = useState(false)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsChanging(true)
+    onChange(Number(e.target.value))
+    setTimeout(() => setIsChanging(false), 300)
+  }
+
+  const percentage = ((value - min) / (max - min)) * 100
+
+  return (
+    <div className="slider-container">
+      <div className="slider-track">
+        <motion.div
+          className="slider-fill"
+          style={{ 
+            backgroundColor: color,
+            '--slider-value': `${percentage}%`
+          } as React.CSSProperties}
+          initial={{ width: 0 }}
+          animate={{ width: `${percentage}%` }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        />
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value}
+        onChange={handleChange}
+        className="slider-input"
+        style={{ color }}
+      />
+      {showValue && (
+        <motion.div
+          className="slider-value"
+          animate={{ scale: isChanging ? 1.1 : 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          {value}%
+        </motion.div>
+      )}
+    </div>
+  )
+})
+
+// Update CollaboratorCard component
 const CollaboratorCard = memo(function CollaboratorCard({
   collaborator,
   onDelete,
@@ -50,147 +178,188 @@ const CollaboratorCard = memo(function CollaboratorCard({
   onSelect,
   error,
 }: CollaboratorCardProps) {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const roleConfig = ROLES[collaborator.role as keyof typeof ROLES] || ROLES.Artist
+
   return (
-    <Card
-      className={`mb-4 border-l-4 transition-all ${isSelected ? "ring-2 ring-offset-2 ring-blue-500" : ""}`}
-      style={{ borderLeftColor: collaborator.color }}
-      onClick={onSelect}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
     >
-      <CardContent className="p-4">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white"
-              style={{ backgroundColor: collaborator.color }}
-            >
-              {collaborator.role === "Artist" ? (
-                <User size={16} />
-              ) : collaborator.role === "Manager" ? (
-                <Briefcase size={16} />
-              ) : (
-                <Users size={16} />
-              )}
-            </div>
-            <div>
-              <select
-                value={collaborator.role}
-                onChange={(e) => onUpdate("role", e.target.value)}
-                className="text-sm font-medium bg-transparent border-none focus:ring-0 p-0 pr-6"
+      <Card
+        className={`mb-4 border-l-4 transition-all ${isSelected ? "ring-2 ring-offset-2 ring-blue-500" : ""}`}
+        style={{ borderLeftColor: roleConfig.color }}
+        onClick={onSelect}
+      >
+        <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                style={{ backgroundColor: roleConfig.color }}
               >
-                <option value="Artist">Artist</option>
-                <option value="Manager">Manager</option>
-                <option value="Producer">Producer</option>
-                <option value="Songwriter">Songwriter</option>
-                <option value="Other">Other</option>
-              </select>
+                {roleConfig.icon}
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={collaborator.role}
+                  onChange={(e) => onUpdate("role", e.target.value)}
+                  className="text-sm font-medium bg-transparent border-none focus:ring-0 p-0 pr-6"
+                >
+                  {Object.entries(ROLES).map(([key, { label }]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowEmojiPicker(!showEmojiPicker)
+                    }}
+                  >
+                    {collaborator.emoji || "👤"}
+                  </Button>
+                  {showEmojiPicker && (
+                    <div className="absolute top-10 left-0 bg-white p-2 rounded-lg shadow-lg">
+                      {/* Emoji picker implementation would go here */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onUpdate("emoji", "🎤")
+                          setShowEmojiPicker(false)
+                        }}
+                      >
+                        🎤
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onUpdate("emoji", "🎸")
+                          setShowEmojiPicker(false)
+                        }}
+                      >
+                        🎸
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onUpdate("emoji", "🎹")
+                          setShowEmojiPicker(false)
+                        }}
+                      >
+                        🎹
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          {collaborator.role !== "Artist" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete()
-              }}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 gap-3">
-          <div>
-            <Label
-              htmlFor={`name-${collaborator.id}`}
-              className={`text-xs ${error?.name ? "text-red-500" : "text-gray-500"}`}
-            >
-              Name
-            </Label>
-            <Input
-              id={`name-${collaborator.id}`}
-              value={collaborator.name}
-              onChange={(e) => onUpdate("name", e.target.value)}
-              placeholder="Full name"
-              className={`mt-1 ${error?.name ? "border-red-500" : ""}`}
-              onClick={(e) => e.stopPropagation()}
-            />
-            {error?.name && <p className="text-red-500 text-xs mt-1">{error.name}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label
-                htmlFor={`email-${collaborator.id}`}
-                className={`text-xs ${error?.email ? "text-red-500" : "text-gray-500"}`}
+            {collaborator.role !== "Artist" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete()
+                }}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
               >
-                Email
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <Label htmlFor="name" className={`text-xs ${error?.name ? "text-red-500" : "text-gray-500"}`}>
+                Name
               </Label>
               <Input
-                id={`email-${collaborator.id}`}
-                value={collaborator.email}
-                onChange={(e) => onUpdate("email", e.target.value)}
-                placeholder="Email address"
-                className={`mt-1 ${error?.email ? "border-red-500" : ""}`}
+                id="name"
+                value={collaborator.name}
+                onChange={(e) => onUpdate("name", e.target.value)}
+                placeholder="Full name"
+                className={`mt-1 ${error?.name ? "border-red-500" : ""}`}
                 onClick={(e) => e.stopPropagation()}
               />
-              {error?.email && <p className="text-red-500 text-xs mt-1">{error.email}</p>}
+              {error?.name && <p className="text-red-500 text-xs mt-1">{error.name}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="email" className={`text-xs ${error?.email ? "text-red-500" : "text-gray-500"}`}>
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  value={collaborator.email}
+                  onChange={(e) => onUpdate("email", e.target.value)}
+                  placeholder="Email address"
+                  className={`mt-1 ${error?.email ? "border-red-500" : ""}`}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                {error?.email && <p className="text-red-500 text-xs mt-1">{error.email}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="wallet" className={`text-xs ${error?.walletAddress ? "text-red-500" : "text-gray-500"}`}>
+                  Wallet (Optional)
+                </Label>
+                <Input
+                  id="wallet"
+                  value={collaborator.walletAddress}
+                  onChange={(e) => onUpdate("walletAddress", e.target.value)}
+                  placeholder="0x..."
+                  className={`mt-1 ${error?.walletAddress ? "border-red-500" : ""}`}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                {error?.walletAddress && <p className="text-red-500 text-xs mt-1">{error.walletAddress}</p>}
+              </div>
             </div>
 
             <div>
-              <Label
-                htmlFor={`wallet-${collaborator.id}`}
-                className={`text-xs ${error?.walletAddress ? "text-red-500" : "text-gray-500"}`}
-              >
-                Wallet (Optional)
-              </Label>
-              <Input
-                id={`wallet-${collaborator.id}`}
-                value={collaborator.walletAddress}
-                onChange={(e) => onUpdate("walletAddress", e.target.value)}
-                placeholder="0x..."
-                className={`mt-1 ${error?.walletAddress ? "border-red-500" : ""}`}
-                onClick={(e) => e.stopPropagation()}
+              <div className="flex justify-between items-center mb-2">
+                <Label
+                  htmlFor={`percentage-${collaborator.id}`}
+                  className={`text-xs ${error?.percentage ? "text-red-500" : "text-gray-500"}`}
+                >
+                  Revenue Share (%)
+                </Label>
+              </div>
+              <RangeSlider
+                value={collaborator.percentage}
+                onChange={(value) => onUpdate("percentage", value)}
+                min={0}
+                max={100}
+                color={roleConfig.color}
               />
-              {error?.walletAddress && <p className="text-red-500 text-xs mt-1">{error.walletAddress}</p>}
+              {error?.percentage && <p className="text-red-500 text-xs mt-1">{error.percentage}</p>}
             </div>
           </div>
-
-          <div>
-            <div className="flex justify-between items-center">
-              <Label
-                htmlFor={`percentage-${collaborator.id}`}
-                className={`text-xs ${error?.percentage ? "text-red-500" : "text-gray-500"}`}
-              >
-                Revenue Share (%)
-              </Label>
-              <span className="text-sm font-medium">{collaborator.percentage}%</span>
-            </div>
-            <input
-              id={`percentage-${collaborator.id}`}
-              type="range"
-              min="0"
-              max="100"
-              value={collaborator.percentage}
-              onChange={(e) => onUpdate("percentage", Number.parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
-              style={{
-                background: `linear-gradient(to right, ${collaborator.color} 0%, ${collaborator.color} ${collaborator.percentage}%, #e5e7eb ${collaborator.percentage}%, #e5e7eb 100%)`,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            />
-            {error?.percentage && <p className="text-red-500 text-xs mt-1">{error.percentage}</p>}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 })
 
 // SplitPieChart component
 const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collaborators: Collaborator[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [hoveredSlice, setHoveredSlice] = useState<number | null>(null)
+  const [activeSlice, setActiveSlice] = useState<number | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     if (!canvasRef.current) return
@@ -208,20 +377,30 @@ const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collabora
     // Clear canvas
     ctx.clearRect(0, 0, width, height)
 
+    // Create a map to track role counts
+    const roleCount = new Map<string, number>()
+
     // Filter out collaborators with 0%
     const validCollaborators = collaborators.filter((c) => c.percentage > 0)
 
     // Draw pie chart
     let startAngle = 0
     validCollaborators.forEach((collaborator) => {
+      // Get or increment role count
+      const count = roleCount.get(collaborator.role) || 0
+      roleCount.set(collaborator.role, count + 1)
+
       const sliceAngle = (collaborator.percentage / 100) * 2 * Math.PI
+      const color = getRoleColor(collaborator.role, count)
 
       ctx.beginPath()
       ctx.moveTo(centerX, centerY)
       ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle)
       ctx.closePath()
 
-      ctx.fillStyle = collaborator.color
+      // Add hover effect
+      const isHovered = hoveredSlice === validCollaborators.indexOf(collaborator)
+      ctx.fillStyle = isHovered ? `${color}CC` : color
       ctx.fill()
 
       // Draw label if slice is big enough
@@ -246,20 +425,91 @@ const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collabora
     ctx.arc(centerX, centerY, radius * 0.5, 0, 2 * Math.PI)
     ctx.fillStyle = "#FFFFFF"
     ctx.fill()
-  }, [collaborators])
+  }, [collaborators, hoveredSlice])
 
   return (
     <div className="flex flex-col items-center">
-      <canvas ref={canvasRef} width={200} height={200} className="mb-4" />
-      <div className="grid grid-cols-2 gap-2 w-full">
-        {collaborators.map((collaborator) => (
-          <div key={collaborator.id} className="flex items-center text-sm">
-            <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: collaborator.color }}></div>
-            <span className="truncate">{collaborator.name || collaborator.role}</span>
-            <span className="ml-1 font-medium">{collaborator.percentage}%</span>
-          </div>
-        ))}
+      <div className="relative">
+        <motion.canvas
+          ref={canvasRef}
+          width={200}
+          height={200}
+          className="mb-4 cursor-pointer"
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.2 }}
+          onMouseMove={(e) => {
+            const canvas = canvasRef.current
+            if (!canvas) return
+
+            const rect = canvas.getBoundingClientRect()
+            const x = e.clientX - rect.left - canvas.width / 2
+            const y = e.clientY - rect.top - canvas.height / 2
+            const angle = Math.atan2(y, x)
+            const normalizedAngle = (angle + Math.PI * 2) % (Math.PI * 2)
+
+            let startAngle = 0
+            collaborators.forEach((collaborator, index) => {
+              const sliceAngle = (collaborator.percentage / 100) * 2 * Math.PI
+              if (normalizedAngle >= startAngle && normalizedAngle < startAngle + sliceAngle) {
+                setHoveredSlice(index)
+                setActiveSlice(index)
+                setTooltipPosition({ x: e.clientX, y: e.clientY })
+              }
+              startAngle += sliceAngle
+            })
+          }}
+          onMouseLeave={() => {
+            setHoveredSlice(null)
+            setActiveSlice(null)
+          }}
+        />
+        {hoveredSlice !== null && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="absolute bg-white p-2 rounded-lg shadow-lg text-sm"
+            style={{
+              left: tooltipPosition.x,
+              top: tooltipPosition.y + 10,
+              transform: "translateX(-50%)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: ROLES[collaborators[hoveredSlice].role as keyof typeof ROLES].color }}
+              />
+              <span>{collaborators[hoveredSlice].name || collaborators[hoveredSlice].role}</span>
+              <span className="font-medium">{collaborators[hoveredSlice].percentage}%</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {`${collaborators[hoveredSlice].percentage}% of every $100`}
+            </div>
+          </motion.div>
+        )}
       </div>
+      <motion.div className="grid grid-cols-2 gap-2 w-full">
+        {collaborators.map((collaborator, index) => {
+          const roleConfig = ROLES[collaborator.role as keyof typeof ROLES] || ROLES.Artist
+          return (
+            <motion.div
+              key={collaborator.id}
+              className={`flex items-center text-sm p-2 rounded-lg transition-colors ${
+                hoveredSlice === index ? "bg-gray-100" : ""
+              }`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.2, delay: index * 0.1 }}
+            >
+              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: roleConfig.color }}></div>
+              <span className="truncate">{collaborator.name || collaborator.role}</span>
+              <span className="ml-1 font-medium">{collaborator.percentage}%</span>
+            </motion.div>
+          )
+        })}
+      </motion.div>
     </div>
   )
 })
@@ -278,6 +528,16 @@ const FundingControls = memo(function FundingControls({
   onCuratorSharesChange: (checked: boolean) => void
   onCuratorPercentageChange: (value: number) => void
 }) {
+  const [isIconPulsing, setIsIconPulsing] = useState(false)
+
+  const handleToggle = (checked: boolean) => {
+    onCuratorSharesChange(checked)
+    if (checked) {
+      setIsIconPulsing(true)
+      setTimeout(() => setIsIconPulsing(false), 1000)
+    }
+  }
+
   return (
     <Card>
       <CardContent className="p-4">
@@ -298,35 +558,49 @@ const FundingControls = memo(function FundingControls({
           </div>
 
           <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="curator-toggle">
               <div className="space-y-0.5">
                 <Label htmlFor="curator-shares" className="text-sm">
                   Early Curator Shares
                 </Label>
                 <p className="text-xs text-gray-500">Reward early supporters with additional revenue share</p>
               </div>
-              <Switch id="curator-shares" checked={enableCuratorShares} onCheckedChange={onCuratorSharesChange} />
+              <div className="flex items-center gap-2">
+                <motion.div
+                  animate={{ scale: isIconPulsing ? [1, 1.2, 1] : 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Crown className={`curator-icon ${enableCuratorShares ? 'active' : ''}`} />
+                </motion.div>
+                <Switch id="curator-shares" checked={enableCuratorShares} onCheckedChange={handleToggle} />
+              </div>
             </div>
 
-            {enableCuratorShares && (
-              <div className="mt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Curator Percentage</span>
-                  <span className="text-sm font-medium">{curatorPercentage}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="20"
-                  value={curatorPercentage}
-                  onChange={(e) => onCuratorPercentageChange(Number.parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
-                  style={{
-                    background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${curatorPercentage * 5}%, #e5e7eb ${curatorPercentage * 5}%, #e5e7eb 100%)`,
-                  }}
-                />
-              </div>
-            )}
+            <AnimatePresence>
+              {enableCuratorShares && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-3"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Crown className="w-4 h-4 text-yellow-500" />
+                    <span className="text-sm">Reward your early believers with bonus %</span>
+                  </div>
+                  <div className="mt-4">
+                    <RangeSlider
+                      value={curatorPercentage}
+                      onChange={onCuratorPercentageChange}
+                      min={1}
+                      max={20}
+                      color={ROLES.Curator.color}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </CardContent>

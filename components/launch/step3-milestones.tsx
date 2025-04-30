@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Trash2 } from "lucide-react"
-import { useCreateProject } from "@/contexts/create-project-context"
+import { useLaunchProject } from "@/contexts/launch-project-context"
 
 interface Step3Props {
   onNext: () => void
@@ -17,7 +17,7 @@ interface Step3Props {
 }
 
 export default function Step3Milestones({ onNext }: Step3Props) {
-  const { projectData, addMilestone, updateMilestone, removeMilestone } = useCreateProject()
+  const { projectData, addMilestone, updateMilestone, removeMilestone } = useLaunchProject()
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({})
 
   const validateForm = () => {

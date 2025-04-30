@@ -94,14 +94,14 @@ export default function BrowsePage() {
                     <span className="text-white font-medium">2</span>
                   </div>
                   <div className="pl-16">
-                    <h3 className="font-medium text-white mb-2">Explore investment groups</h3>
+                    <h3 className="font-medium text-white mb-2">Explore investment curators</h3>
                     <p className="text-sm text-gray-400">
                       Browse record labels and curators to discover investment opportunities. Each group sources and
                       manages their own deals.
                     </p>
                     <Link href="/groups">
                       <button className="mt-4 text-white border border-gray-600 rounded px-4 py-1 text-sm hover:bg-gray-800">
-                        Browse investment groups
+                        Browse investment curators
                       </button>
                     </Link>
                   </div>
@@ -231,16 +231,16 @@ export default function BrowsePage() {
           </div>
         </div>
 
-        {/* Investment Groups Section */}
+        {/* Investment Curators Section */}
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">
-                See our <span className="font-normal">trending groups</span>
+                See our <span className="font-normal">trending curators</span>
               </h2>
               <Link href="/groups">
                 <Button variant="link" className="text-blue-600">
-                  Browse all groups
+                  Browse all curators
                 </Button>
               </Link>
             </div>

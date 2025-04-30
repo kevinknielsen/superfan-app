@@ -14,7 +14,9 @@ export default function ArtistDashboardPage() {
             <p className="text-gray-600">Welcome back, David Park</p>
           </div>
           <div className="mt-4 md:mt-0">
-            <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]">Create New Project</Button>
+            <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]">
+              Launch New Project
+            </Button>
           </div>
         </div>
 

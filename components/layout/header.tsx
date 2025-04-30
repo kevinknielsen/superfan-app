@@ -7,6 +7,8 @@ import { Menu, X, LogOut, ExternalLink } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { UserAvatar } from "@/components/ui/user-avatar"
 import Image from "next/image"
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -54,20 +56,17 @@ export default function Header() {
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">
-            <Link href="/create" className="text-gray-300 hover:text-white">
-              Create
+            <Link
+              href="/launch"
+              className="text-gray-300 hover:text-white"
+            >
+              Launch
             </Link>
             <Link href="/deals" className="text-gray-300 hover:text-white">
               Projects
             </Link>
             <Link href="/groups" className="text-gray-300 hover:text-white">
-              Groups
-            </Link>
-            <Link href="/unlocks" className="text-gray-300 hover:text-white">
-              Unlocks
-            </Link>
-            <Link href="/dashboard" className="text-gray-300 hover:text-white">
-              Portfolio
+              Curators
             </Link>
           </div>
         </div>
@@ -85,6 +84,12 @@ export default function Header() {
               </button>
               {profileDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                  <Link href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Portfolio
+                  </Link>
+                  <Link href="/unlocks" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Unlocks
+                  </Link>
                   <Link href="/settings/wallet" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     Wallet
                   </Link>
@@ -144,11 +149,11 @@ export default function Header() {
         <div className="md:hidden py-4 px-4 bg-[#0f172a] border-t border-gray-800 animate-in slide-in-from-top duration-300">
           <nav className="flex flex-col space-y-4">
             <Link
-              href="/create"
+              href="/launch"
               className="text-gray-300 hover:text-white py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Create
+              Launch
             </Link>
             <Link
               href="/deals"
@@ -162,21 +167,7 @@ export default function Header() {
               className="text-gray-300 hover:text-white py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Groups
-            </Link>
-            <Link
-              href="/unlocks"
-              className="text-gray-300 hover:text-white py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Unlocks
-            </Link>
-            <Link
-              href="/dashboard"
-              className="text-gray-300 hover:text-white py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Portfolio
+              Curators
             </Link>
             <Link
               href="/settings/profile"
