@@ -1,21 +1,35 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, ArrowRight } from "lucide-react"
 import { useCreateProject } from "@/contexts/create-project-context"
 
 export default function SuccessPage() {
-  const router = useRouter()
+  // Use state to store project data that will be populated on the client
+  const [projectTitle, setProjectTitle] = useState<string>("Your Project")
+  const [projectArtist, setProjectArtist] = useState<string>("Artist")
+  const [hasFinancing, setHasFinancing] = useState<boolean>(false)
+  const [targetRaise, setTargetRaise] = useState<number | null>(null)
+  const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
+
   const { projectData, resetForm } = useCreateProject()
 
-  // Reset form when navigating away
+  // Safe context access that won't break during prerendering
   useEffect(() => {
+    // Update local state with context data
+    setProjectTitle(projectData.title || "Untitled Project")
+    setProjectArtist(projectData.artistName || "Unknown Artist")
+    setHasFinancing(projectData.enableFinancing)
+    setTargetRaise(projectData.targetRaise)
+    setArtworkPreview(projectData.artworkPreview)
+
+    // Reset form when navigating away
     return () => {
       resetForm()
     }
-  }, [resetForm])
+  }, [projectData, resetForm])
 
   return (
     <div className="container max-w-3xl mx-auto px-4 py-16">
@@ -27,16 +41,16 @@ export default function SuccessPage() {
         </div>
         <h1 className="text-2xl font-bold mb-2">Project Successfully Created!</h1>
         <p className="text-gray-600 mb-8">
-          {projectData.enableFinancing
+          {hasFinancing
             ? "Your project has been created and is now visible to your selected curators."
             : "Your project has been created as private and is ready for you to share with curators."}
         </p>
 
         <div className="bg-gray-50 rounded-lg p-6 mb-8">
           <div className="flex items-center justify-center mb-4">
-            {projectData.artworkPreview ? (
+            {artworkPreview ? (
               <img
-                src={projectData.artworkPreview || "/placeholder.svg"}
+                src={artworkPreview || "/placeholder.svg"}
                 alt="Project artwork"
                 className="w-24 h-24 object-cover rounded-md"
               />
@@ -46,13 +60,13 @@ export default function SuccessPage() {
               </div>
             )}
           </div>
-          <h2 className="text-xl font-bold">{projectData.title || "Untitled Project"}</h2>
-          <p className="text-gray-600">{projectData.artistName || "Unknown Artist"}</p>
+          <h2 className="text-xl font-bold">{projectTitle}</h2>
+          <p className="text-gray-600">{projectArtist}</p>
 
-          {projectData.enableFinancing ? (
+          {hasFinancing ? (
             <div className="mt-4 flex justify-center">
               <div className="bg-blue-50 text-blue-800 px-4 py-2 rounded-full text-sm">
-                Target: {projectData.targetRaise ? `${projectData.targetRaise} USDC` : "Not specified"}
+                Target: {targetRaise ? `${targetRaise} USDC` : "Not specified"}
               </div>
             </div>
           ) : (
@@ -63,16 +77,17 @@ export default function SuccessPage() {
         </div>
 
         <div className="space-y-4">
-          <Button
-            onClick={() => router.push("/deals")}
-            className="w-full bg-[#0f172a] hover:bg-[#1e293b] flex items-center justify-center"
-          >
-            View All Projects
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          <Button variant="outline" onClick={() => router.push("/create")} className="w-full">
-            Create Another Project
-          </Button>
+          <Link href="/deals">
+            <Button className="w-full bg-[#0f172a] hover:bg-[#1e293b] flex items-center justify-center">
+              View All Projects
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+          <Link href="/create">
+            <Button variant="outline" className="w-full">
+              Create Another Project
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
