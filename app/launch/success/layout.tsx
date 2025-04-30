@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { CreateProjectProvider } from "@/contexts/create-project-context"
+import { LaunchProjectProvider } from "@/contexts/launch-project-context"
 import ProtectedRoute from "@/components/protected-route"
 
 export default function SuccessLayout({
@@ -12,7 +12,7 @@ export default function SuccessLayout({
 }) {
   return (
     <ProtectedRoute>
-      <CreateProjectProvider>{children}</CreateProjectProvider>
+      <LaunchProjectProvider>{children}</LaunchProjectProvider>
     </ProtectedRoute>
   )
 }

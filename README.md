@@ -10,7 +10,7 @@ Superfan One is a platform that connects music artists with investors, allowing 
 
 - **User Authentication**: Secure login and signup functionality
 - **Investment Opportunities**: Browse and invest in music projects
-- **Groups**: Join investment groups led by record labels and curators
+- **Curators**: Join investment curators led by record labels and curators
 - **Portfolio Dashboard**: Track investments and royalty income
 - **Wallet Management**: Deposit and withdraw funds
 - **Profile Management**: Update personal and investor information
@@ -63,7 +63,7 @@ superfan-one/
 │   ├── browse/             # Browse page
 │   ├── dashboard/          # Dashboard pages
 │   ├── deals/              # Deals pages
-│   ├── groups/             # Groups pages
+│   ├── groups/             # Curators pages
 │   ├── login/              # Authentication pages
 │   ├── settings/           # User settings pages
 │   ├── layout.tsx          # Root layout
@@ -81,7 +81,7 @@ superfan-one/
 │   ├── placeholder-avatars/  # Avatar images
 │   ├── placeholder-backgrounds/ # Background images
 │   ├── placeholder-deals/  # Deal images
-│   └── placeholder-groups/ # Group images
+│   └── placeholder-groups/ # Curator images
 ├── styles/                 # Global styles
 ├── .gitignore              # Git ignore file
 ├── next.config.js          # Next.js configuration

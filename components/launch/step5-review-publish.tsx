@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useCreateProject } from "@/contexts/create-project-context"
+import { useLaunchProject } from "@/contexts/launch-project-context"
 import { formatDate } from "@/lib/utils"
 import { UserAvatar } from "@/components/ui/user-avatar"
 
@@ -13,7 +13,7 @@ interface Step5Props {
 }
 
 export default function Step5ReviewPublish({ onNext }: Step5Props) {
-  const { projectData } = useCreateProject()
+  const { projectData } = useLaunchProject()
 
   // Calculate total percentage for royalty splits
   const totalPercentage = projectData.royaltySplits.reduce((sum, split) => sum + split.percentage, 0)

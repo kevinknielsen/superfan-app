@@ -26,6 +26,15 @@ export interface Curator {
   selected: boolean
 }
 
+// Define collaborator type
+export interface Collaborator {
+  id: string
+  name: string
+  role: string
+  percentage: number
+  email: string
+}
+
 // Update the ProjectData interface to include financing options
 export interface ProjectData {
   // Step 1: Project Info
@@ -36,6 +45,8 @@ export interface ProjectData {
   artworkPreview: string | null
   trackDemo: File | null
   trackDemoPreview: string | null
+  voiceNote: File | null
+  voiceNotePreview: string | null
   additionalFiles: File[]
   additionalFilesInfo: {
     id: string
@@ -92,6 +103,8 @@ const initialState: ProjectData = {
   artworkPreview: null,
   trackDemo: null,
   trackDemoPreview: null,
+  voiceNote: null,
+  voiceNotePreview: null,
   additionalFiles: [],
   additionalFilesInfo: [],
 
@@ -117,21 +130,21 @@ const initialState: ProjectData = {
   selectedCurators: availableCurators,
 }
 
-// Create context
-interface CreateProjectContextType {
+// Launch context
+interface LaunchProjectContextType {
   projectData: ProjectData
-  updateField: (stepKey: keyof ProjectData, value: any) => void
-  updateMilestone: (id: string, field: keyof Milestone, value: any) => void
-  addMilestone: () => void
-  removeMilestone: (id: string) => void
-  updateRoyaltySplit: (id: string, field: keyof RoyaltySplit, value: any) => void
-  addRoyaltySplit: () => void
-  removeRoyaltySplit: (id: string) => void
-  toggleCurator: (id: string) => void
+  updateField: (field: keyof ProjectData, value: any) => void
+  addMilestone: (milestone: Milestone) => void
+  updateMilestone: (index: number, milestone: Milestone) => void
+  removeMilestone: (index: number) => void
+  addCollaborator: (collaborator: Collaborator) => void
+  updateCollaborator: (index: number, collaborator: Collaborator) => void
+  removeCollaborator: (index: number) => void
+  toggleCurator: (curatorId: string) => void
   resetForm: () => void
 }
 
-const CreateProjectContext = createContext<CreateProjectContextType | undefined>(undefined)
+const LaunchProjectContext = createContext<LaunchProjectContextType | undefined>(undefined)
 
 // Reducer function
 function projectReducer(state: ProjectData, action: Action): ProjectData {
@@ -181,7 +194,9 @@ function projectReducer(state: ProjectData, action: Action): ProjectData {
       return {
         ...state,
         selectedCurators: state.selectedCurators.map((curator) =>
-          curator.id === action.payload.id ? { ...curator, selected: !curator.selected } : curator,
+          curator.id === action.payload.id
+            ? { ...curator, selected: !curator.selected }
+            : curator
         ),
       }
     case "RESET_FORM":
@@ -192,51 +207,39 @@ function projectReducer(state: ProjectData, action: Action): ProjectData {
 }
 
 // Provider component
-export function CreateProjectProvider({ children }: { children: ReactNode }) {
-  const [projectData, dispatch] = useReducer(projectReducer, initialState)
+export function LaunchProjectProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(projectReducer, initialState)
 
-  const updateField = (stepKey: keyof ProjectData, value: any) => {
-    dispatch({ type: "UPDATE_FIELD", payload: { stepKey, value } })
+  const updateField = (field: keyof ProjectData, value: any) => {
+    dispatch({ type: "UPDATE_FIELD", payload: { stepKey: field, value } })
   }
 
-  const updateMilestone = (id: string, field: keyof Milestone, value: any) => {
-    dispatch({ type: "UPDATE_MILESTONE", payload: { id, field, value } })
+  const addMilestone = (milestone: Milestone) => {
+    dispatch({ type: "ADD_MILESTONE", payload: milestone })
   }
 
-  const addMilestone = () => {
-    const newMilestone: Milestone = {
-      id: `milestone-${Date.now()}`,
-      title: "",
-      description: "",
-      dueDate: "",
-      requiresApproval: false,
-    }
-    dispatch({ type: "ADD_MILESTONE", payload: newMilestone })
+  const updateMilestone = (index: number, milestone: Milestone) => {
+    dispatch({ type: "UPDATE_MILESTONE", payload: { id: milestone.id, field: "title", value: milestone.title } })
   }
 
-  const removeMilestone = (id: string) => {
-    dispatch({ type: "REMOVE_MILESTONE", payload: { id } })
+  const removeMilestone = (index: number) => {
+    dispatch({ type: "REMOVE_MILESTONE", payload: { id: state.milestones[index].id } })
   }
 
-  const updateRoyaltySplit = (id: string, field: keyof RoyaltySplit, value: any) => {
-    dispatch({ type: "UPDATE_ROYALTY_SPLIT", payload: { id, field, value } })
+  const addCollaborator = (collaborator: Collaborator) => {
+    // Implementation needed
   }
 
-  const addRoyaltySplit = () => {
-    const newSplit: RoyaltySplit = {
-      id: `split-${Date.now()}`,
-      recipient: "",
-      percentage: 0,
-    }
-    dispatch({ type: "ADD_ROYALTY_SPLIT", payload: newSplit })
+  const updateCollaborator = (index: number, collaborator: Collaborator) => {
+    // Implementation needed
   }
 
-  const removeRoyaltySplit = (id: string) => {
-    dispatch({ type: "REMOVE_ROYALTY_SPLIT", payload: { id } })
+  const removeCollaborator = (index: number) => {
+    // Implementation needed
   }
 
-  const toggleCurator = (id: string) => {
-    dispatch({ type: "TOGGLE_CURATOR", payload: { id } })
+  const toggleCurator = (curatorId: string) => {
+    dispatch({ type: "TOGGLE_CURATOR", payload: { id: curatorId } })
   }
 
   const resetForm = () => {
@@ -244,30 +247,30 @@ export function CreateProjectProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <CreateProjectContext.Provider
+    <LaunchProjectContext.Provider
       value={{
-        projectData,
+        projectData: state,
         updateField,
-        updateMilestone,
         addMilestone,
+        updateMilestone,
         removeMilestone,
-        updateRoyaltySplit,
-        addRoyaltySplit,
-        removeRoyaltySplit,
+        addCollaborator,
+        updateCollaborator,
+        removeCollaborator,
         toggleCurator,
         resetForm,
       }}
     >
       {children}
-    </CreateProjectContext.Provider>
+    </LaunchProjectContext.Provider>
   )
 }
 
 // Custom hook for using the context
-export function useCreateProject() {
-  const context = useContext(CreateProjectContext)
+export function useLaunchProject() {
+  const context = useContext(LaunchProjectContext)
   if (context === undefined) {
-    throw new Error("useCreateProject must be used within a CreateProjectProvider")
+    throw new Error("useLaunchProject must be used within a LaunchProjectProvider")
   }
   return context
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { Music, FileText, Trash2, Play, Pause, Upload, X } from "lucide-react"
+import { Music, FileText, Trash2, Play, Pause, Upload, X, Mic, HelpCircle } from "lucide-react"
 import { useState, type ChangeEvent, useRef, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,11 +15,44 @@ interface Step1Props {
   isLastStep: boolean
 }
 
+interface ProjectData {
+  title: string
+  artistName: string
+  description: string
+  artwork?: File
+  artworkPreview?: string
+  trackDemo?: File
+  trackDemoPreview?: string
+  voiceNote?: File
+  voiceNotePreview?: string
+  additionalFiles?: File[]
+}
+
 export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const { projectData, updateField } = useCreateProject()
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [waveformData, setWaveformData] = useState<number[]>([])
+  const [currentTip, setCurrentTip] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const voiceNoteRef = useRef<HTMLAudioElement>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const animationFrameRef = useRef<number>()
+
+  const tips = [
+    "Need inspo? Check how @Jay dropped their last EP →",
+    "Not sure what to say? Start with the vibe or collaborators.",
+  ]
+
+  useEffect(() => {
+    const tipInterval = setInterval(() => {
+      setCurrentTip((prev) => (prev + 1) % tips.length)
+    }, 5000)
+    return () => clearInterval(tipInterval)
+  }, [])
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -50,23 +83,92 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const handleTrackDemoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Check if file is an audio file
-      if (!file.type.startsWith("audio/")) {
-        setErrors((prev) => ({ ...prev, trackDemo: "Please upload an audio file" }))
+      if (file.size > 20 * 1024 * 1024) {
+        setErrors((prev) => ({
+          ...prev,
+          trackDemo: "File size must be less than 20MB",
+        }))
         return
       }
-
       updateField("trackDemo", file)
+      const reader = new FileReader()
+      reader.onload = () => {
+        updateField("trackDemoPreview", reader.result as string)
+        // Initialize audio context and analyser when file is loaded
+        initializeAudioContext(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file)
-      updateField("trackDemoPreview", previewUrl)
+  const initializeAudioContext = (audioData: string) => {
+    if (audioContextRef.current) {
+      audioContextRef.current.close()
+    }
 
-      // Clear error
-      if (errors.trackDemo) {
-        setErrors((prev) => ({ ...prev, trackDemo: "" }))
+    const audioContext = new (window.AudioContext as any)()
+    audioContextRef.current = audioContext
+
+    const analyser = audioContext.createAnalyser()
+    analyserRef.current = analyser
+    analyser.fftSize = 256
+
+    const source = audioContext.createBufferSource()
+    const audioElement = new Audio(audioData)
+
+    audioElement.addEventListener('loadedmetadata', () => {
+      setDuration(audioElement.duration)
+    })
+
+    audioElement.addEventListener('timeupdate', () => {
+      setCurrentTime(audioElement.currentTime)
+    })
+
+    const sourceNode = audioContext.createMediaElementSource(audioElement)
+    sourceNode.connect(analyser)
+    analyser.connect(audioContext.destination)
+
+    // Start analyzing the waveform
+    updateWaveform()
+  }
+
+  const updateWaveform = () => {
+    if (!analyserRef.current) return
+
+    const bufferLength = analyserRef.current.frequencyBinCount
+    const dataArray = new Uint8Array(bufferLength)
+    analyserRef.current.getByteFrequencyData(dataArray)
+
+    // Normalize the data for visualization
+    const normalizedData = Array.from(dataArray).map(value => value / 255)
+    setWaveformData(normalizedData)
+
+    animationFrameRef.current = requestAnimationFrame(updateWaveform)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
       }
     }
+  }, [])
+
+  const handleSliderChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newTime = parseFloat(e.target.value)
+    setCurrentTime(newTime)
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime
+    }
+  }
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60)
+    const seconds = Math.floor(time % 60)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
   const handleAdditionalFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -102,10 +204,13 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
 
   const removeTrackDemo = () => {
     updateField("trackDemo", null)
-    if (projectData.trackDemoPreview) {
-      URL.revokeObjectURL(projectData.trackDemoPreview)
-      updateField("trackDemoPreview", null)
-    }
+    updateField("trackDemoPreview", null)
+    setIsPlaying(false)
+  }
+
+  const removeVoiceNote = () => {
+    updateField("voiceNote", null)
+    updateField("voiceNotePreview", null)
     setIsPlaying(false)
   }
 
@@ -162,6 +267,24 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
     }
   }, [])
 
+  const handleVoiceNoteChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 20 * 1024 * 1024) {
+        setErrors((prev) => ({
+          ...prev,
+          voiceNote: "File size must be less than 20MB",
+        }))
+        return
+      }
+      updateField("voiceNote", file)
+      const reader = new FileReader()
+      reader.onload = () => {
+        updateField("voiceNotePreview", reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
@@ -207,7 +330,7 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
       <div>
         <h2 className="text-xl font-semibold mb-4">Project Information</h2>
         <p className="text-gray-600 mb-6">
-          Tell us about your music project. This information will be displayed to potential investors.
+          Tell us about your music project.
         </p>
       </div>
 
@@ -246,14 +369,28 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
           <Label htmlFor="description" className={errors.description ? "text-red-500" : ""}>
             Short Description
           </Label>
-          <Textarea
-            id="description"
-            name="description"
-            placeholder="Describe your project in a few sentences..."
-            value={projectData.description}
-            onChange={handleChange}
-            className={`min-h-[100px] ${errors.description ? "border-red-500" : ""}`}
-          />
+          <div className="relative">
+            <div className="absolute -top-8 left-0 right-0 bg-blue-50 p-3 rounded-lg mb-2">
+              <p className="text-sm text-blue-800">
+                "Tell fans why this release matters. Share the story, the vibe, or what makes it yours."
+              </p>
+              <p className="text-xs text-blue-600 mt-1 italic">
+                "This is where I won over my first backers." — @LiaSounds
+              </p>
+            </div>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Describe your project in a few sentences..."
+              value={projectData.description}
+              onChange={handleChange}
+              className={`min-h-[100px] ${errors.description ? "border-red-500" : ""}`}
+            />
+            <div className="absolute -bottom-8 right-0 flex items-center gap-2 text-gray-500 text-sm">
+              <HelpCircle className="w-4 h-4" />
+              <span>{tips[currentTip]}</span>
+            </div>
+          </div>
           {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
           <p className="text-gray-500 text-sm mt-1">{projectData.description.length}/500 characters (minimum 20)</p>
         </div>
@@ -262,16 +399,18 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
           <Label className={errors.artwork ? "text-red-500" : ""}>Upload Artwork</Label>
           <div className="mt-2">
             {projectData.artworkPreview ? (
-              <div className="relative w-40 h-40 rounded-lg overflow-hidden border border-gray-200">
+              <div className="relative w-40 h-40 group">
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-900/20 to-transparent rounded-lg transition-opacity opacity-0 group-hover:opacity-100" />
+                <div className="absolute inset-0 border-4 border-gray-200 rounded-lg transform transition-transform group-hover:scale-105" />
                 <img
                   src={projectData.artworkPreview || "/placeholder.svg"}
                   alt="Project artwork preview"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-lg"
                 />
                 <button
                   type="button"
                   onClick={removeArtwork}
-                  className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md"
+                  className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -312,32 +451,66 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
           </Label>
           <div className="mt-2">
             {projectData.trackDemoPreview ? (
-              <div className="relative flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="mr-4">
+              <div className="relative flex flex-col p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center mb-4">
+                  <div className="mr-4">
+                    <button
+                      type="button"
+                      onClick={togglePlayPause}
+                      className="w-10 h-10 flex items-center justify-center bg-[#0f172a] text-white rounded-full hover:bg-[#1e293b] transition-colors"
+                      aria-label={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <div className="flex-grow">
+                    <p className="font-medium truncate">{projectData.trackDemo?.name || "Track Demo"}</p>
+                    <p className="text-sm text-gray-500">Tap to preview</p>
+                  </div>
                   <button
                     type="button"
-                    onClick={togglePlayPause}
-                    className="w-10 h-10 flex items-center justify-center bg-[#0f172a] text-white rounded-full"
-                    aria-label={isPlaying ? "Pause" : "Play"}
+                    onClick={removeTrackDemo}
+                    className="ml-2 text-gray-500 hover:text-red-500"
+                    aria-label="Remove track demo"
                   >
-                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="flex-grow">
-                  <p className="font-medium truncate">{projectData.trackDemo?.name || "Track Demo"}</p>
-                  <p className="text-sm text-gray-500">
-                    {projectData.trackDemo ? formatFileSize(projectData.trackDemo.size) : ""}
-                  </p>
-                  <audio ref={audioRef} src={projectData.trackDemoPreview} className="hidden" />
+
+                {/* Waveform Visualizer */}
+                <div className="w-full h-16 mb-2 bg-gray-100 rounded-lg overflow-hidden">
+                  <div className="w-full h-full flex items-center justify-center">
+                    {waveformData.length > 0 ? (
+                      <div className="w-full h-full flex items-center">
+                        {waveformData.map((value, index) => (
+                          <div
+                            key={index}
+                            className="h-full flex-1 mx-0.5 bg-[#0f172a] rounded-sm"
+                            style={{ height: `${value * 100}%` }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">Loading waveform...</div>
+                    )}
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={removeTrackDemo}
-                  className="ml-2 text-gray-500 hover:text-red-500"
-                  aria-label="Remove track demo"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+
+                {/* Progress Slider */}
+                <div className="w-full flex items-center gap-2">
+                  <span className="text-xs text-gray-500">{formatTime(currentTime)}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration}
+                    value={currentTime}
+                    onChange={handleSliderChange}
+                    className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#0f172a]"
+                  />
+                  <span className="text-xs text-gray-500">{formatTime(duration)}</span>
+                </div>
+
+                <audio ref={audioRef} src={projectData.trackDemoPreview} className="hidden" />
               </div>
             ) : (
               <div className="flex items-center justify-center w-full">
@@ -363,6 +536,64 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
               </div>
             )}
             {errors.trackDemo && <p className="text-red-500 text-sm mt-1">{errors.trackDemo}</p>}
+          </div>
+        </div>
+
+        {/* Voice Note Upload Section */}
+        <div className="mt-6">
+          <Label htmlFor="voiceNote">Add a voice intro for your fans (optional)</Label>
+          <div className="mt-2">
+            {projectData.voiceNotePreview ? (
+              <div className="relative flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="mr-4">
+                  <button
+                    type="button"
+                    onClick={togglePlayPause}
+                    className="w-10 h-10 flex items-center justify-center bg-[#0f172a] text-white rounded-full hover:bg-[#1e293b] transition-colors"
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                  >
+                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  </button>
+                </div>
+                <div className="flex-grow">
+                  <p className="font-medium truncate">Voice Note</p>
+                  <p className="text-sm text-gray-500">30s max</p>
+                  <div className="w-full h-1 bg-gray-200 rounded-full mt-2">
+                    <div className="w-1/3 h-full bg-[#0f172a] rounded-full"></div>
+                  </div>
+                  <audio ref={voiceNoteRef} src={projectData.voiceNotePreview} className="hidden" />
+                </div>
+                <button
+                  type="button"
+                  onClick={removeVoiceNote}
+                  className="ml-2 text-gray-500 hover:text-red-500"
+                  aria-label="Remove voice note"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <label
+                  htmlFor="voiceNote"
+                  className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
+                >
+                  <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                    <Mic className="w-6 h-6 mb-2 text-gray-400" />
+                    <p className="text-sm text-gray-500">
+                      <span className="font-semibold">Click to record</span> a 30s voice note
+                    </p>
+                  </div>
+                  <input
+                    id="voiceNote"
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={handleVoiceNoteChange}
+                  />
+                </label>
+              </div>
+            )}
           </div>
         </div>
 

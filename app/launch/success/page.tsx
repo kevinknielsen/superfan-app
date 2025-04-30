@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, ArrowRight } from "lucide-react"
-import { useCreateProject } from "@/contexts/create-project-context"
+import { useLaunchProject } from "@/contexts/launch-project-context"
 
 export default function SuccessPage() {
   // Use state to store project data that will be populated on the client
@@ -14,7 +14,7 @@ export default function SuccessPage() {
   const [targetRaise, setTargetRaise] = useState<number | null>(null)
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
 
-  const { projectData, resetForm } = useCreateProject()
+  const { projectData, resetForm } = useLaunchProject()
 
   // Safe context access that won't break during prerendering
   useEffect(() => {
@@ -83,9 +83,9 @@ export default function SuccessPage() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/create">
+          <Link href="/launch">
             <Button variant="outline" className="w-full">
-              Create Another Project
+              Launch Another Project
             </Button>
           </Link>
         </div>
