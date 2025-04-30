@@ -54,8 +54,11 @@ export default function Header() {
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">
+            <Link href="/create" className="text-gray-300 hover:text-white">
+              Create
+            </Link>
             <Link href="/deals" className="text-gray-300 hover:text-white">
-              Deals
+              Projects
             </Link>
             <Link href="/groups" className="text-gray-300 hover:text-white">
               Groups
@@ -141,11 +144,18 @@ export default function Header() {
         <div className="md:hidden py-4 px-4 bg-[#0f172a] border-t border-gray-800 animate-in slide-in-from-top duration-300">
           <nav className="flex flex-col space-y-4">
             <Link
+              href="/create"
+              className="text-gray-300 hover:text-white py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Create
+            </Link>
+            <Link
               href="/deals"
               className="text-gray-300 hover:text-white py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Deals
+              Projects
             </Link>
             <Link
               href="/groups"
