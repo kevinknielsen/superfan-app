@@ -165,13 +165,13 @@ export default function DealsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           {/* Header section with title and action button - matching dashboard style */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold">Investment Opportunities</h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Investment Opportunities</h1>
+              <p className="text-muted-foreground">
                 Discover and invest in music projects • {mockDeals.length} available deals
               </p>
             </div>
@@ -190,12 +190,12 @@ export default function DealsPage() {
 
           {/* Filters (conditionally shown) */}
           {showFilters && (
-            <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+            <div className="bg-card p-4 rounded-lg shadow-sm mb-6 border border-border">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Deal Type</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Deal Type</label>
                   <select
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     value={dealTypeFilter}
                     onChange={(e) => setDealTypeFilter(e.target.value)}
                   >
@@ -208,9 +208,9 @@ export default function DealsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Music Genre</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Music Genre</label>
                   <select
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     value={genreFilter}
                     onChange={(e) => setGenreFilter(e.target.value)}
                   >
@@ -226,9 +226,9 @@ export default function DealsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Sort By</label>
                   <select
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
@@ -245,7 +245,7 @@ export default function DealsPage() {
           <div className="space-y-6">
             {filteredDeals.length > 0 ? (
               filteredDeals.map((deal) => (
-                <div key={deal.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div key={deal.id} className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
                   <div className="p-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-start lg:items-center">
                       <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex items-center gap-4 mb-4 lg:mb-0">
@@ -325,9 +325,8 @@ export default function DealsPage() {
                 </div>
               ))
             ) : (
-              <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                <h3 className="text-lg font-medium text-gray-700">No deals match your filters</h3>
-                <p className="text-gray-500 mt-2">Try adjusting your filters to see more results.</p>
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No deals match your current filters.</p>
               </div>
             )}
           </div>

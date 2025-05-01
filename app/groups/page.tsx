@@ -166,13 +166,13 @@ export default function CuratorsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           {/* Header section with title and action button - matching dashboard style */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold">Curators</h1>
-              <p className="text-gray-600">Discover and join investment curators</p>
+              <h1 className="text-3xl font-bold text-foreground">Curators</h1>
+              <p className="text-muted-foreground">Discover and join investment curators</p>
             </div>
             <div className="mt-4 md:mt-0">
               <Button
@@ -189,12 +189,12 @@ export default function CuratorsPage() {
 
           {/* Filters (conditionally shown) */}
           {showFilters && (
-            <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+            <div className="bg-card p-4 rounded-lg shadow-sm mb-6 border border-border">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Group Type</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Group Type</label>
                   <select
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     value={groupTypeFilter}
                     onChange={(e) => setGroupTypeFilter(e.target.value)}
                   >
@@ -207,9 +207,9 @@ export default function CuratorsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Music Genre</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Music Genre</label>
                   <select
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     value={genreFilter}
                     onChange={(e) => setGenreFilter(e.target.value)}
                   >
@@ -225,9 +225,9 @@ export default function CuratorsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Sort By</label>
                   <select
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
@@ -241,263 +241,266 @@ export default function CuratorsPage() {
           )}
 
           {/* Tab Navigation - Styled to match the image */}
-          <div className="bg-white rounded-lg shadow-sm mb-6">
-            <div className="flex flex-wrap border-b">
+          <div className="bg-card rounded-lg shadow-sm mb-6 border border-border">
+            <div className="flex flex-wrap border-b border-border">
               <button
                 className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 ${
                   activeTab === "browse"
-                    ? "border-black text-black"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
                 onClick={() => setActiveTab("browse")}
               >
-                Browse • {browseCount}
+                Browse ({browseCount})
+              </button>
+              <button
+                className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 ${
+                  activeTab === "my-groups"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                }`}
+                onClick={() => setActiveTab("my-groups")}
+              >
+                My Groups ({myGroupsCount})
               </button>
               <button
                 className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 ${
                   activeTab === "pending"
-                    ? "border-black text-black"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
                 onClick={() => setActiveTab("pending")}
               >
-                Pending {pendingCount > 0 ? `• ${pendingCount}` : ""}
+                Pending ({pendingCount})
               </button>
-              <button
-                className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 ${
-                  activeTab === "my"
-                    ? "border-black text-black"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-                onClick={() => setActiveTab("my")}
-              >
-                My Groups • {myGroupsCount}
-              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-6">
+              {/* Content based on active tab */}
+              {activeTab === "browse" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {browseGroups.length > 0 ? (
+                    browseGroups.map((group) => (
+                      <div key={group.id} className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
+                        <div className="p-6">
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                              <Image
+                                src={group.image || "/placeholder.svg"}
+                                alt={group.name}
+                                width={64}
+                                height={64}
+                                className="object-cover"
+                              />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg text-foreground">{group.name}</h3>
+                              <div className="flex items-center text-sm text-muted-foreground mt-1">
+                                <span>{group.type}</span>
+                                <span className="mx-2">•</span>
+                                <div className="w-5 h-5 bg-muted rounded-full overflow-hidden mr-1">
+                                  <Image
+                                    src={group.owner.avatar || "/placeholder.svg"}
+                                    alt={group.owner.name}
+                                    width={20}
+                                    height={20}
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <span>{group.owner.name}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {group.tags.map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{group.description}</p>
+
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">Active Deals</div>
+                              <div className="text-2xl font-bold text-foreground">{group.activeDeals}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">Total Raised</div>
+                              <div className="text-2xl font-bold text-foreground">{group.totalRaised}</div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4">
+                            <Link href={`/groups/${group.id}`}>
+                              <Button className="w-full">View Group</Button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 bg-card rounded-lg shadow-sm p-12 text-center border border-border">
+                      <h3 className="text-lg font-medium text-foreground">No curators match your filters</h3>
+                      <p className="text-muted-foreground mt-2">Try adjusting your filters to see more results.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "pending" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {pendingGroups.length > 0 ? (
+                    pendingGroups.map((group) => (
+                      <div key={group.id} className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
+                        <div className="p-6">
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                              <Image
+                                src={group.image || "/placeholder.svg"}
+                                alt={group.name}
+                                width={64}
+                                height={64}
+                                className="object-cover"
+                              />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg text-foreground">{group.name}</h3>
+                              <div className="flex items-center text-sm text-muted-foreground mt-1">
+                                <span>{group.type}</span>
+                                <span className="mx-2">•</span>
+                                <div className="w-5 h-5 bg-muted rounded-full overflow-hidden mr-1">
+                                  <Image
+                                    src={group.owner.avatar || "/placeholder.svg"}
+                                    alt={group.owner.name}
+                                    width={20}
+                                    height={20}
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <span>{group.owner.name}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {group.tags.map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{group.description}</p>
+
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">Active Deals</div>
+                              <div className="text-2xl font-bold text-foreground">{group.activeDeals}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">Total Raised</div>
+                              <div className="text-2xl font-bold text-foreground">{group.totalRaised}</div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4">
+                            <div className="text-sm text-amber-600 mb-2 text-center">Application pending approval</div>
+                            <Link href={`/groups/${group.id}`}>
+                              <Button className="w-full">View Group</Button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 bg-card rounded-lg shadow-sm p-12 text-center border border-border">
+                      <h3 className="text-lg font-medium text-foreground">Browse curators and request to join to see pending applications here.</h3>
+                      <p className="text-muted-foreground mt-2">
+                        Browse curators and request to join to see pending applications here.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "my-groups" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {myGroups.length > 0 ? (
+                    myGroups.map((group) => (
+                      <div key={group.id} className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
+                        <div className="p-6">
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                              <Image
+                                src={group.image || "/placeholder.svg"}
+                                alt={group.name}
+                                width={64}
+                                height={64}
+                                className="object-cover"
+                              />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg text-foreground">{group.name}</h3>
+                              <div className="flex items-center text-sm text-muted-foreground mt-1">
+                                <span>{group.type}</span>
+                                <span className="mx-2">•</span>
+                                <div className="w-5 h-5 bg-muted rounded-full overflow-hidden mr-1">
+                                  <Image
+                                    src={group.owner.avatar || "/placeholder.svg"}
+                                    alt={group.owner.name}
+                                    width={20}
+                                    height={20}
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <span>{group.owner.name}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {group.tags.map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{group.description}</p>
+
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">Active Deals</div>
+                              <div className="text-2xl font-bold text-foreground">{group.activeDeals}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">Total Raised</div>
+                              <div className="text-2xl font-bold text-foreground">{group.totalRaised}</div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4">
+                            <Link href={`/groups/${group.id}`}>
+                              <Button className="w-full">View Group</Button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 bg-card rounded-lg shadow-sm p-12 text-center border border-border">
+                      <h3 className="text-lg font-medium text-foreground">You haven't joined any curators yet</h3>
+                      <p className="text-muted-foreground mt-2">Browse curators and request to join to see your curators here.</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Content based on active tab */}
-          {activeTab === "browse" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {browseGroups.length > 0 ? (
-                browseGroups.map((group) => (
-                  <div key={group.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image
-                            src={group.image || "/placeholder.svg"}
-                            alt={group.name}
-                            width={64}
-                            height={64}
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg">{group.name}</h3>
-                          <div className="flex items-center text-sm text-gray-500 mt-1">
-                            <span>{group.type}</span>
-                            <span className="mx-2">•</span>
-                            <div className="w-5 h-5 bg-gray-200 rounded-full overflow-hidden mr-1">
-                              <Image
-                                src={group.owner.avatar || "/placeholder.svg"}
-                                alt={group.owner.name}
-                                width={20}
-                                height={20}
-                                className="object-cover"
-                              />
-                            </div>
-                            <span>{group.owner.name}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {group.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{group.description}</p>
-
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <div className="text-sm text-gray-500 mb-1">Active Deals</div>
-                          <div className="text-2xl font-bold">{group.activeDeals}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500 mb-1">Total Raised</div>
-                          <div className="text-2xl font-bold">{group.totalRaised}</div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <Link href={`/groups/${group.id}`}>
-                          <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-3 bg-white rounded-lg shadow-sm p-12 text-center">
-                  <h3 className="text-lg font-medium text-gray-700">No curators match your filters</h3>
-                  <p className="text-gray-500 mt-2">Try adjusting your filters to see more results.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "pending" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {pendingGroups.length > 0 ? (
-                pendingGroups.map((group) => (
-                  <div key={group.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image
-                            src={group.image || "/placeholder.svg"}
-                            alt={group.name}
-                            width={64}
-                            height={64}
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg">{group.name}</h3>
-                          <div className="flex items-center text-sm text-gray-500 mt-1">
-                            <span>{group.type}</span>
-                            <span className="mx-2">•</span>
-                            <div className="w-5 h-5 bg-gray-200 rounded-full overflow-hidden mr-1">
-                              <Image
-                                src={group.owner.avatar || "/placeholder.svg"}
-                                alt={group.owner.name}
-                                width={20}
-                                height={20}
-                                className="object-cover"
-                              />
-                            </div>
-                            <span>{group.owner.name}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {group.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{group.description}</p>
-
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <div className="text-sm text-gray-500 mb-1">Active Deals</div>
-                          <div className="text-2xl font-bold">{group.activeDeals}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500 mb-1">Total Raised</div>
-                          <div className="text-2xl font-bold">{group.totalRaised}</div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <div className="text-sm text-amber-600 mb-2 text-center">Application pending approval</div>
-                        <Link href={`/groups/${group.id}`}>
-                          <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-3 bg-white rounded-lg shadow-sm p-12 text-center">
-                  <h3 className="text-lg font-medium text-gray-700">Browse curators and request to join to see pending applications here.</h3>
-                  <p className="text-gray-500 mt-2">
-                    Browse curators and request to join to see pending applications here.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "my" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {myGroups.length > 0 ? (
-                myGroups.map((group) => (
-                  <div key={group.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image
-                            src={group.image || "/placeholder.svg"}
-                            alt={group.name}
-                            width={64}
-                            height={64}
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg">{group.name}</h3>
-                          <div className="flex items-center text-sm text-gray-500 mt-1">
-                            <span>{group.type}</span>
-                            <span className="mx-2">•</span>
-                            <div className="w-5 h-5 bg-gray-200 rounded-full overflow-hidden mr-1">
-                              <Image
-                                src={group.owner.avatar || "/placeholder.svg"}
-                                alt={group.owner.name}
-                                width={20}
-                                height={20}
-                                className="object-cover"
-                              />
-                            </div>
-                            <span>{group.owner.name}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {group.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{group.description}</p>
-
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <div className="text-sm text-gray-500 mb-1">Active Deals</div>
-                          <div className="text-2xl font-bold">{group.activeDeals}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500 mb-1">Total Raised</div>
-                          <div className="text-2xl font-bold">{group.totalRaised}</div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <Link href={`/groups/${group.id}`}>
-                          <Button className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]">View Group</Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-3 bg-white rounded-lg shadow-sm p-12 text-center">
-                  <h3 className="text-lg font-medium text-gray-700">You haven't joined any curators yet</h3>
-                  <p className="text-gray-500 mt-2">Browse curators and request to join to see your curators here.</p>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </ProtectedRoute>
