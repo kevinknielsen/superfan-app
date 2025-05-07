@@ -62,7 +62,7 @@ export default function Header() {
             >
               Launch
             </Link>
-            <Link href="/deals" className="text-gray-300 hover:text-white">
+            <Link href="/projects" className="text-gray-300 hover:text-white">
               Projects
             </Link>
             <Link href="/groups" className="text-gray-300 hover:text-white">
@@ -156,7 +156,7 @@ export default function Header() {
               Launch
             </Link>
             <Link
-              href="/deals"
+              href="/projects"
               className="text-gray-300 hover:text-white py-2"
               onClick={() => setMobileMenuOpen(false)}
             >

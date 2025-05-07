@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useReducer, type ReactNode } from "react"
+import { createContext, useContext, useReducer, type ReactNode, useEffect } from "react"
 
 // Define milestone type
 export interface Milestone {
@@ -38,6 +38,7 @@ export interface Collaborator {
 // Update the ProjectData interface to include financing options
 export interface ProjectData {
   // Step 1: Project Info
+  id: string | null
   title: string
   artistName: string
   description: string
@@ -94,8 +95,25 @@ const availableCurators: Curator[] = [
 ]
 
 // Initial state
+const LOCAL_STORAGE_KEY = 'superfan-launch-project'
+
+const getInitialState = (): ProjectData => {
+  if (typeof window !== 'undefined') {
+    const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY)
+    if (stored) {
+      try {
+        return JSON.parse(stored)
+      } catch (e) {
+        // Ignore parse errors and fall back to default
+      }
+    }
+  }
+  return initialState
+}
+
 const initialState: ProjectData = {
   // Step 1: Project Info
+  id: null,
   title: "",
   artistName: "",
   description: "",
@@ -134,9 +152,9 @@ const initialState: ProjectData = {
 interface LaunchProjectContextType {
   projectData: ProjectData
   updateField: (field: keyof ProjectData, value: any) => void
-  addMilestone: (milestone: Milestone) => void
-  updateMilestone: (index: number, milestone: Milestone) => void
-  removeMilestone: (index: number) => void
+  addMilestone: () => void
+  updateMilestone: (id: string, field: keyof Milestone, value: any) => void
+  removeMilestone: (id: string) => void
   addCollaborator: (collaborator: Collaborator) => void
   updateCollaborator: (index: number, collaborator: Collaborator) => void
   removeCollaborator: (index: number) => void
@@ -158,9 +176,9 @@ function projectReducer(state: ProjectData, action: Action): ProjectData {
       return {
         ...state,
         milestones: state.milestones.map((milestone) =>
-          milestone.id === action.payload.id
+          milestone && milestone.id === action.payload.id
             ? { ...milestone, [action.payload.field]: action.payload.value }
-            : milestone,
+            : milestone
         ),
       }
     case "ADD_MILESTONE":
@@ -171,7 +189,9 @@ function projectReducer(state: ProjectData, action: Action): ProjectData {
     case "REMOVE_MILESTONE":
       return {
         ...state,
-        milestones: state.milestones.filter((milestone) => milestone.id !== action.payload.id),
+        milestones: state.milestones.filter(
+          (milestone) => milestone && milestone.id !== action.payload.id
+        ),
       }
     case "UPDATE_ROYALTY_SPLIT":
       return {
@@ -208,22 +228,36 @@ function projectReducer(state: ProjectData, action: Action): ProjectData {
 
 // Provider component
 export function LaunchProjectProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(projectReducer, initialState)
+  const [state, dispatch] = useReducer(projectReducer, getInitialState())
+
+  // Persist state to localStorage on every change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(getSerializableState(state)))
+    }
+  }, [state])
 
   const updateField = (field: keyof ProjectData, value: any) => {
     dispatch({ type: "UPDATE_FIELD", payload: { stepKey: field, value } })
   }
 
-  const addMilestone = (milestone: Milestone) => {
-    dispatch({ type: "ADD_MILESTONE", payload: milestone })
+  const addMilestone = () => {
+    const newMilestone: Milestone = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9),
+      title: "",
+      description: "",
+      dueDate: "",
+      requiresApproval: false,
+    };
+    dispatch({ type: "ADD_MILESTONE", payload: newMilestone });
   }
 
-  const updateMilestone = (index: number, milestone: Milestone) => {
-    dispatch({ type: "UPDATE_MILESTONE", payload: { id: milestone.id, field: "title", value: milestone.title } })
+  const updateMilestone = (id: string, field: keyof Milestone, value: any) => {
+    dispatch({ type: "UPDATE_MILESTONE", payload: { id, field, value } })
   }
 
-  const removeMilestone = (index: number) => {
-    dispatch({ type: "REMOVE_MILESTONE", payload: { id: state.milestones[index].id } })
+  const removeMilestone = (id: string) => {
+    dispatch({ type: "REMOVE_MILESTONE", payload: { id } })
   }
 
   const addCollaborator = (collaborator: Collaborator) => {
@@ -273,4 +307,19 @@ export function useLaunchProject() {
     throw new Error("useLaunchProject must be used within a LaunchProjectProvider")
   }
   return context
+}
+
+function getSerializableState(state: ProjectData): ProjectData {
+  // Remove File objects and previews from state before saving
+  return {
+    ...state,
+    artwork: null,
+    artworkPreview: null,
+    trackDemo: null,
+    trackDemoPreview: null,
+    voiceNote: null,
+    voiceNotePreview: null,
+    additionalFiles: [],
+    additionalFilesInfo: [],
+  }
 }

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { useLaunchProject } from "@/contexts/launch-project-context"
 import { formatDate } from "@/lib/utils"
 import { UserAvatar } from "@/components/ui/user-avatar"
+import supabase from '@/lib/supabaseClient'
+import { useRouter } from "next/navigation"
 
 interface Step5Props {
   onNext: () => void
@@ -14,12 +16,31 @@ interface Step5Props {
 
 export default function Step5ReviewPublish({ onNext }: Step5Props) {
   const { projectData } = useLaunchProject()
+  const router = useRouter();
 
   // Calculate total percentage for royalty splits
   const totalPercentage = projectData.royaltySplits.reduce((sum, split) => sum + split.percentage, 0)
 
   // Count selected curators
   const selectedCurators = projectData.selectedCurators.filter((curator) => curator.selected)
+
+  const handlePublish = async () => {
+    if (!projectData.id) return onNext();
+    const selectedCurators = projectData.selectedCurators.filter((curator) => curator.selected);
+    if (selectedCurators.length > 0) {
+      const pitches = selectedCurators.map((curator) => ({
+        project_id: projectData.id,
+        curator_id: curator.id,
+      }));
+      const { error } = await supabase.from('curator_pitches').insert(pitches);
+      if (error) {
+        alert('Failed to save curator pitches: ' + error.message);
+        return;
+      }
+    }
+    // Redirect to success page with projectId
+    router.push(`/launch/success?projectId=${projectData.id}`);
+  };
 
   return (
     <div className="space-y-8">
@@ -193,7 +214,7 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
       </div>
 
       <div className="pt-4">
-        <Button onClick={onNext} className="w-full bg-[#0f172a] hover:bg-[#1e293b]">
+        <Button onClick={handlePublish} className="w-full bg-[#0f172a] hover:bg-[#1e293b]">
           Publish Project
         </Button>
         <p className="text-center text-sm text-gray-500 mt-2">

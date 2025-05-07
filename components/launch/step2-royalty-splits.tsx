@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Plus, Trash2, AlertCircle, Users, User, Briefcase, DollarSign, Mic, Music, Crown, Sparkles } from "lucide-react"
 import { useLaunchProject } from "@/contexts/launch-project-context"
 import { motion, AnimatePresence } from "framer-motion"
+import supabase from '@/lib/supabaseClient'
 
 // Define collaborator types and interfaces
 interface Collaborator {
@@ -699,27 +700,6 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
   const [curatorPercentage, setCuratorPercentage] = useState<number>(5)
   const platformFee = 2.5 // Fixed platform fee
 
-  // Use a ref to track if we've already synced with context
-  // This prevents the infinite update loop
-  const initialSyncDone = useRef(false)
-
-  // Only sync with context when collaborators change AND it's not the initial render
-  useEffect(() => {
-    // Skip the first render to prevent the loop
-    if (!initialSyncDone.current) {
-      initialSyncDone.current = true
-      return
-    }
-
-    const royaltySplits = collaborators.map((collab) => ({
-      id: collab.id,
-      recipient: collab.email || collab.walletAddress,
-      percentage: collab.percentage,
-    }))
-
-    updateField("royaltySplits", royaltySplits)
-  }, [collaborators, updateField])
-
   // Add a new collaborator
   const addCollaborator = useCallback(() => {
     const newId = `collab-${Date.now()}`
@@ -895,11 +875,46 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
   }, [collaborators])
 
   // Handle next button click
-  const handleNext = useCallback(() => {
-    if (validateForm()) {
-      onNext()
+  const handleNext = useCallback(async () => {
+    if (!projectData.id) {
+      setErrors((prev) => ({ ...prev, general: { id: 'Project ID missing. Please complete Project Info step.' } }))
+      return
     }
-  }, [validateForm, onNext])
+    if (!validateForm()) return
+
+    // Update context with royalty splits before Supabase insert
+    const royaltySplits = collaborators.map((collab) => ({
+      id: collab.id,
+      recipient: collab.email || collab.walletAddress,
+      percentage: collab.percentage,
+    }))
+    updateField("royaltySplits", royaltySplits)
+
+    // Prepare team members array for Supabase
+    const teamMembersArray = collaborators.map((collab) => ({
+      project_id: projectData.id,
+      role: collab.role,
+      name: collab.name,
+      email: collab.email,
+      wallet_address: collab.walletAddress,
+      revenue_share_pct: collab.percentage,
+    }))
+
+    // Validate sum = 100
+    const totalPct = teamMembersArray.reduce((sum, m) => sum + m.revenue_share_pct, 0)
+    if (totalPct !== 100) {
+      setErrors((prev) => ({ ...prev, general: { percentage: 'Total percentage must equal 100%' } }))
+      return
+    }
+
+    // Insert into Supabase
+    const { error } = await supabase.from('team_members').insert(teamMembersArray)
+    if (error) {
+      setErrors((prev) => ({ ...prev, general: { submit: 'Failed to save team members: ' + error.message } }))
+      return
+    }
+    onNext()
+  }, [validateForm, onNext, collaborators, projectData.id, updateField])
 
   // Calculate total percentage
   const totalPercentage = collaborators.reduce((sum, c) => sum + c.percentage, 0)

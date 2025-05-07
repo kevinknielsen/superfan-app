@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useLaunchProject } from "@/contexts/launch-project-context"
+import supabase from '@/lib/supabaseClient'
 
 interface Step1Props {
   onNext: () => void
@@ -26,6 +27,7 @@ interface ProjectData {
   voiceNote?: File
   voiceNotePreview?: string
   additionalFiles?: File[]
+  id?: string
 }
 
 export default function Step1ProjectInfo({ onNext }: Step1Props) {
@@ -41,6 +43,7 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | undefined>(undefined)
+  const [hasMounted, setHasMounted] = useState(false);
 
   const tips = [
     "Need inspo? Check how @Jay dropped their last EP →",
@@ -53,6 +56,8 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
     }, 5000)
     return () => clearInterval(tipInterval)
   }, [])
+
+  useEffect(() => { setHasMounted(true); }, []);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -310,10 +315,72 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleNext = () => {
-    if (validateForm()) {
-      onNext()
+  const handleNext = async () => {
+    // Validate form before proceeding
+    const isValid = validateForm()
+    if (!isValid) return
+
+    let coverArtUrl = null
+    let trackDemoUrl = null
+    let voiceIntroUrl = null
+
+    // 1. Upload files to Supabase Storage if present
+    if (projectData.artwork) {
+      console.log('Uploading artwork file:', projectData.artwork);
+      const { data, error } = await supabase.storage
+        .from('project-assets')
+        .upload(`cover-art/${crypto.randomUUID()}-${projectData.artwork.name}`, projectData.artwork)
+      if (error) {
+        console.error('Supabase upload error:', error);
+        setErrors((prev) => ({ ...prev, artwork: 'Failed to upload cover art: ' + error.message }))
+        return
+      }
+      coverArtUrl = supabase.storage.from('project-assets').getPublicUrl(data.path).data.publicUrl
     }
+    if (projectData.trackDemo) {
+      const { data, error } = await supabase.storage
+        .from('project-assets')
+        .upload(`track-demo/${crypto.randomUUID()}-${projectData.trackDemo.name}`, projectData.trackDemo)
+      if (error) {
+        setErrors((prev) => ({ ...prev, trackDemo: 'Failed to upload track demo' }))
+        return
+      }
+      trackDemoUrl = supabase.storage.from('project-assets').getPublicUrl(data.path).data.publicUrl
+    }
+    if (projectData.voiceNote) {
+      const { data, error } = await supabase.storage
+        .from('project-assets')
+        .upload(`voice-intro/${crypto.randomUUID()}-${projectData.voiceNote.name}`, projectData.voiceNote)
+      if (error) {
+        setErrors((prev) => ({ ...prev, voiceNote: 'Failed to upload voice intro' }))
+        return
+      }
+      voiceIntroUrl = supabase.storage.from('project-assets').getPublicUrl(data.path).data.publicUrl
+    }
+
+    // 2. Insert project into Supabase DB
+    const { data, error } = await supabase.from('projects').insert({
+      title: projectData.title,
+      artist_name: projectData.artistName,
+      description: projectData.description,
+      cover_art_url: coverArtUrl,
+      track_demo_url: trackDemoUrl,
+      voice_intro_url: voiceIntroUrl,
+      // status, platform_fee_pct, early_curator_shares use defaults
+    }).select('id')
+
+    if (error || !data || !data[0]?.id) {
+      setErrors((prev) => ({ ...prev, submit: 'Failed to create project' }))
+      return
+    }
+
+    // 3. Save projectId in context/global state
+    if (typeof updateField === 'function') {
+      updateField('id' as keyof ProjectData, data[0].id)
+    }
+
+    // Proceed to next step
+    onNext()
   }
 
   // Format file size to human-readable format
@@ -384,7 +451,11 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
             </div>
           </div>
           {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-          <p className="text-gray-500 text-sm mt-1">{projectData.description.length}/500 characters (minimum 20)</p>
+          {hasMounted && (
+            <p className="text-gray-500 text-sm mt-1">
+              {projectData.description.length}/500 characters (minimum 20)
+            </p>
+          )}
         </div>
 
         <div>

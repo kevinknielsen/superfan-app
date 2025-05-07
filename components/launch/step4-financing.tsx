@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { useLaunchProject } from "@/contexts/launch-project-context"
 import { UserAvatar } from "@/components/ui/user-avatar"
 import { Check } from "lucide-react"
+import supabase from '@/lib/supabaseClient'
 
 interface Step4Props {
   onNext: () => void
@@ -81,10 +82,28 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleNext = () => {
-    if (validateForm()) {
-      onNext()
+  const handleNext = async () => {
+    if (!projectData.id) {
+      setErrors((prev) => ({ ...prev, general: 'Project ID missing. Please complete Project Info step.' }))
+      return
     }
+    if (!validateForm()) return
+
+    // Insert financing details into Supabase
+    const { error } = await supabase.from('financing').insert({
+      project_id: projectData.id,
+      enabled: projectData.enableFinancing,
+      target_raise: projectData.targetRaise,
+      min_contribution: projectData.minContribution,
+      max_contribution: projectData.maxContribution,
+      start_date: projectData.startDate,
+      end_date: projectData.endDate,
+    })
+    if (error) {
+      setErrors((prev) => ({ ...prev, general: 'Failed to save financing: ' + error.message }))
+      return
+    }
+    onNext()
   }
 
   const handleCuratorClick = (curatorId: string) => {
