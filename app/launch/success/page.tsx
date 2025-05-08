@@ -9,7 +9,7 @@ import { useSearchParams } from "next/navigation"
 
 export default function SuccessPage() {
   const searchParams = useSearchParams();
-  const projectId = searchParams.get("projectId");
+  const projectId = searchParams?.get("projectId") || null;
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
