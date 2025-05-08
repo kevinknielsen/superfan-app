@@ -35,6 +35,16 @@ export interface Collaborator {
   email: string
 }
 
+interface DemoTrackFile {
+  id: string
+  file: File
+  title: string
+  previewUrl: string
+  isPlaying: boolean
+  currentTime: number
+  duration: number
+}
+
 // Update the ProjectData interface to include financing options
 export interface ProjectData {
   // Step 1: Project Info
@@ -71,6 +81,9 @@ export interface ProjectData {
   startDate: string
   endDate: string
   selectedCurators: Curator[]
+
+  // Step 5: Demo Tracks
+  demoTracks: DemoTrackFile[]
 }
 
 // Define action types
@@ -146,6 +159,9 @@ const initialState: ProjectData = {
   startDate: "",
   endDate: "",
   selectedCurators: availableCurators,
+
+  // Step 5: Demo Tracks
+  demoTracks: [],
 }
 
 // Launch context

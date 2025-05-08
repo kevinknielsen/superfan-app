@@ -3,10 +3,12 @@
 import { useState, useMemo, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Filter } from "lucide-react"
+import { Filter, Trash2 } from "lucide-react"
 import ProtectedRoute from "@/components/protected-route"
 import { createClient } from '@/utils/supabase/client'
 import { Project } from '@/types/supabase'
+import { useAuth } from "@/contexts/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function ProjectsPage() {
   const [showFilters, setShowFilters] = useState(false)
@@ -14,11 +16,18 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState("newest")
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const { user } = useAuth()
+  const router = useRouter()
+  const [userUuid, setUserUuid] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
       const supabase = createClient()
-      const { data, error } = await supabase.from("projects").select()
+      const { data, error } = await supabase
+        .from("projects")
+        .select()
+        .eq('status', 'published')
       
       if (error) {
         console.error('Error fetching projects:', error)
@@ -31,6 +40,57 @@ export default function ProjectsPage() {
 
     fetchProjects()
   }, [])
+
+  useEffect(() => {
+    const fetchUserUuid = async () => {
+      if (!user?.id) return;
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('privy_id', user.id)
+        .single();
+      if (data?.id) setUserUuid(data.id);
+    };
+    fetchUserUuid();
+  }, [user?.id]);
+
+  const handleDelete = async (projectId: string) => {
+    if (!user?.id) return
+
+    try {
+      setDeletingId(projectId)
+      const supabase = createClient()
+      
+      // First verify the user is the creator
+      const { data: project } = await supabase
+        .from('projects')
+        .select('creator_id')
+        .eq('id', projectId)
+        .single()
+
+      if (!project || project.creator_id !== userUuid) {
+        alert('You do not have permission to delete this project')
+        return
+      }
+
+      // Delete the project
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+
+      if (error) throw error
+
+      // Remove from local state
+      setProjects(projects.filter(p => p.id !== projectId))
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      alert('Failed to delete project')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   // Derive unique statuses from data
   const statuses = useMemo(() => {
@@ -129,66 +189,93 @@ export default function ProjectsPage() {
           {/* Projects Grid */}
           <div className="space-y-6">
             {filteredProjects.length > 0 ? (
-              filteredProjects.map((project) => (
-                <div key={project.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-start lg:items-center">
-                      {/* Project Image */}
-                      <div className="lg:col-span-2">
-                        {project.cover_art_url ? (
-                          <Image
-                            src={project.cover_art_url}
-                            alt={project.title}
-                            width={120}
-                            height={120}
-                            className="rounded-lg object-cover w-full aspect-square"
-                          />
-                        ) : (
-                          <div className="bg-gray-200 rounded-lg w-full aspect-square flex items-center justify-center">
-                            <span className="text-gray-400">No image</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Project Info */}
-                      <div className="lg:col-span-7">
-                        <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
-                        <p className="text-gray-600 mb-2">by {project.artist_name}</p>
-                        {project.description && (
-                          <p className="text-gray-500 text-sm mb-4">{project.description}</p>
-                        )}
-                        <div className="flex flex-wrap gap-2">
-                          <span className="capitalize px-2 py-1 rounded bg-gray-100 text-sm">
-                            {project.status}
-                          </span>
+              filteredProjects.map((project) => {
+                // Debug log for delete permissions
+                console.log('Current user:', user?.id, 'Project creator:', project.creator_id);
+                return (
+                  <div key={project.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-start lg:items-center">
+                        {/* Project Image */}
+                        <div className="lg:col-span-2">
+                          {project.cover_art_url ? (
+                            <Image
+                              src={project.cover_art_url}
+                              alt={project.title}
+                              width={120}
+                              height={120}
+                              className="rounded-lg object-cover w-full aspect-square"
+                            />
+                          ) : (
+                            <div className="bg-gray-200 rounded-lg w-full aspect-square flex items-center justify-center">
+                              <span className="text-gray-400">No image</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
 
-                      {/* Project Stats */}
-                      <div className="lg:col-span-3">
-                        <div className="space-y-2">
-                          <div className="text-sm">
-                            <span className="text-gray-500">Platform Fee:</span>
-                            <span className="ml-2 font-medium">{project.platform_fee_pct}%</span>
+                        {/* Project Info */}
+                        <div className="lg:col-span-7">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
+                              <p className="text-gray-600 mb-2">by {project.artist_name}</p>
+                              {project.description && (
+                                <p className="text-gray-500 text-sm mb-4">{project.description}</p>
+                              )}
+                              <div className="flex flex-wrap gap-2">
+                                <span className="capitalize px-2 py-1 rounded bg-gray-100 text-sm">
+                                  {project.status}
+                                </span>
+                              </div>
+                            </div>
+                            {userUuid === project.creator_id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this project?')) {
+                                    handleDelete(project.id)
+                                  }
+                                }}
+                                disabled={deletingId === project.id}
+                              >
+                                {deletingId === project.id ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
                           </div>
-                          <div className="text-sm">
-                            <span className="text-gray-500">Early Curator Shares:</span>
-                            <span className="ml-2 font-medium">
-                              {project.early_curator_shares ? "Yes" : "No"}
-                            </span>
-                          </div>
-                          <div className="text-sm">
-                            <span className="text-gray-500">Created:</span>
-                            <span className="ml-2 font-medium">
-                              {new Date(project.created_at).toLocaleDateString()}
-                            </span>
+                        </div>
+
+                        {/* Project Stats */}
+                        <div className="lg:col-span-3">
+                          <div className="space-y-2">
+                            <div className="text-sm">
+                              <span className="text-gray-500">Platform Fee:</span>
+                              <span className="ml-2 font-medium">{project.platform_fee_pct}%</span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-gray-500">Early Curator Shares:</span>
+                              <span className="ml-2 font-medium">
+                                {project.early_curator_shares ? "Yes" : "No"}
+                              </span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-gray-500">Created:</span>
+                              <span className="ml-2 font-medium">
+                                {new Date(project.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             ) : (
               <div className="text-center py-12">
                 <p className="text-gray-500">No projects found</p>

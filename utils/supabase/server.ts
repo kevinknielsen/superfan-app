@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { Database } from '@/types/supabase'
 
-export const createClient = async () => {
+export const createClient = () => {
   const cookieStore = cookies()
 
   return createServerClient<Database>(
@@ -14,6 +14,12 @@ export const createClient = async () => {
           return cookieStore.get(name)?.value
         },
       },
+      global: {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': '*/*'
+        }
+      }
     }
   )
 } 

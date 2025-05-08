@@ -13,10 +13,22 @@ export type Project = {
   created_at: string
 }
 
+export type TeamMemberRole = 
+  | 'Producer'
+  | 'Arranger'
+  | 'Songwriter'
+  | 'Musician'
+  | 'Vocalist'
+  | 'Engineer'
+  | 'Mixer'
+  | 'Mastering'
+  | 'Assistant'
+  | 'Tech';
+
 export type TeamMember = {
   id: string
   project_id: string
-  role: string | null
+  role: TeamMemberRole | null
   name: string | null
   email: string | null
   wallet_address: string | null
@@ -49,13 +61,40 @@ export type CuratorPitch = {
   curator_id: string | null
 }
 
+export type User = {
+  id: string
+  privy_id: string
+  email: string | null
+  name: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type DemoTrack = {
+  id: string
+  project_id: string
+  title: string | null
+  url: string
+  created_at: string
+}
+
 export type Database = {
   public: {
     Tables: {
+      users: {
+        Row: User
+        Insert: Omit<User, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<User, 'id' | 'created_at' | 'updated_at'>>
+      }
       projects: {
         Row: Project
         Insert: Omit<Project, 'id' | 'created_at'>
         Update: Partial<Omit<Project, 'id' | 'created_at'>>
+      }
+      demo_tracks: {
+        Row: DemoTrack
+        Insert: Omit<DemoTrack, 'id' | 'created_at'>
+        Update: Partial<Omit<DemoTrack, 'id' | 'created_at'>>
       }
       team_members: {
         Row: TeamMember

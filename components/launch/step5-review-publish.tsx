@@ -26,6 +26,19 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
 
   const handlePublish = async () => {
     if (!projectData.id) return onNext();
+
+    // 1. Update project status to 'published'
+    const { error: updateError } = await supabase
+      .from('projects')
+      .update({ status: 'published' })
+      .eq('id', projectData.id);
+
+    if (updateError) {
+      alert('Failed to publish project: ' + updateError.message);
+      return;
+    }
+
+    // 2. Handle curator pitches (existing code)
     const selectedCurators = projectData.selectedCurators.filter((curator) => curator.selected);
     if (selectedCurators.length > 0) {
       const pitches = selectedCurators.map((curator) => ({
@@ -38,7 +51,8 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
         return;
       }
     }
-    // Redirect to success page with projectId
+
+    // 3. Redirect to success page
     router.push(`/launch/success?projectId=${projectData.id}`);
   };
 
