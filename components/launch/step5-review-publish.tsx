@@ -25,7 +25,7 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
   const selectedCurators = projectData.selectedCurators.filter((curator) => curator.selected)
 
   const handlePublish = async () => {
-    if (!projectData.id) return onNext();
+    if (!projectData?.id) return onNext();
 
     // 1. Update project status to 'published'
     const { error: updateError } = await supabase

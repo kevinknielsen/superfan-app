@@ -56,7 +56,10 @@ export default function ProjectsPage() {
   }, [user?.id]);
 
   const handleDelete = async (projectId: string) => {
-    if (!user?.id) return
+    if (!user?.id || !userUuid) {
+      alert('You must be logged in to delete a project');
+      return;
+    }
 
     try {
       setDeletingId(projectId)
