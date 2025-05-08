@@ -170,22 +170,6 @@ const RangeSlider = memo(function RangeSlider({
   )
 })
 
-// Add this at the top (after imports):
-const ROLE_OPTIONS = [
-  { value: 'Artist', label: 'Artist' },
-  { value: 'Producer', label: 'Producer' },
-  { value: 'Arranger', label: 'Arranger' },
-  { value: 'Songwriter', label: 'Songwriter' },
-  { value: 'Musician', label: 'Musician' },
-  { value: 'Vocalist', label: 'Vocalist' },
-  { value: 'Engineer', label: 'Engineer' },
-  { value: 'Mixer', label: 'Mixer' },
-  { value: 'Mastering', label: 'Mastering' },
-  { value: 'Assistant', label: 'Assistant' },
-  { value: 'Tech', label: 'Tech' },
-  { value: 'Curator', label: 'Curator' }
-];
-
 // Update CollaboratorCard component
 const CollaboratorCard = memo(function CollaboratorCard({
   collaborator,
@@ -224,8 +208,10 @@ const CollaboratorCard = memo(function CollaboratorCard({
                   onChange={(e) => onUpdate("role", e.target.value)}
                   className="text-sm font-medium bg-transparent border-none focus:ring-0 p-0 pr-6"
                 >
-                  {ROLE_OPTIONS.map(({ value, label }) => (
-                    <option key={value} value={value}>{label}</option>
+                  {Object.entries(ROLES).map(([key, { label }]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
                 <div className="relative">

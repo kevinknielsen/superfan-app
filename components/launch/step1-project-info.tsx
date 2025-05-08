@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useLaunchProject } from "@/contexts/launch-project-context"
 import supabase from '@/lib/supabaseClient'
-import { useAuth } from "@/contexts/auth-context"
 
 interface Step1Props {
   onNext: () => void
@@ -17,68 +16,34 @@ interface Step1Props {
   isLastStep: boolean
 }
 
-interface FileData {
-  name: string
-  type: string
-  size: number
-  lastModified: number
-  data: File
-}
-
-interface DemoTrackFile {
-  id: string
-  file: File
-  title: string
-  previewUrl: string
-  isPlaying: boolean
-  currentTime: number
-  duration: number
-}
-
 interface ProjectData {
   title: string
   artistName: string
   description: string
   artwork?: File
   artworkPreview?: string
-  demoTracks: DemoTrackFile[]
+  trackDemo?: File
+  trackDemoPreview?: string
   voiceNote?: File
   voiceNotePreview?: string
   additionalFiles?: File[]
   id?: string
 }
 
-const ROLE_OPTIONS = [
-  { value: 'Artist', label: 'Artist' },
-  { value: 'Producer', label: 'Producer' },
-  { value: 'Arranger', label: 'Arranger' },
-  { value: 'Songwriter', label: 'Songwriter' },
-  { value: 'Musician', label: 'Musician' },
-  { value: 'Vocalist', label: 'Vocalist' },
-  { value: 'Engineer', label: 'Engineer' },
-  { value: 'Mixer', label: 'Mixer' },
-  { value: 'Mastering', label: 'Mastering' },
-  { value: 'Assistant', label: 'Assistant' },
-  { value: 'Tech', label: 'Tech' },
-  { value: 'Curator', label: 'Curator' }
-];
-
 export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const { projectData, updateField } = useLaunchProject()
-  const { user } = useAuth()
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [waveformData, setWaveformData] = useState<number[]>([])
   const [currentTip, setCurrentTip] = useState(0)
-  const audioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>({})
+  const audioRef = useRef<HTMLAudioElement>(null)
   const voiceNoteRef = useRef<HTMLAudioElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | undefined>(undefined)
   const [hasMounted, setHasMounted] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('Artist');
 
   const tips = [
     "Need inspo? Check how @Jay dropped their last EP →",
@@ -93,18 +58,6 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
   }, [])
 
   useEffect(() => { setHasMounted(true); }, []);
-
-  // Add cleanup for blob URLs
-  useEffect(() => {
-    return () => {
-      // Cleanup blob URLs when component unmounts
-      projectData.demoTracks?.forEach(demo => {
-        if (demo.previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(demo.previewUrl)
-        }
-      })
-    }
-  }, [projectData.demoTracks])
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -132,54 +85,24 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
     }
   }
 
-  const handleTrackDemoChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
-
-    const newDemos: DemoTrackFile[] = []
-    const existingDemos = projectData.demoTracks || []
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      if (!file) {
-        continue;
-      }
-
-      // Validate file
-      if (!(file instanceof File)) {
-        continue;
-      }
-
+  const handleTrackDemoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
       if (file.size > 20 * 1024 * 1024) {
         setErrors((prev) => ({
           ...prev,
           trackDemo: "File size must be less than 20MB",
         }))
-        continue
+        return
       }
-
-      const id = `demo-${Date.now()}-${i}`
-      const previewUrl = URL.createObjectURL(file)
-      
-      // Create a new File object to ensure we have all properties
-      const newFile = new File([file], file.name, {
-        type: file.type,
-        lastModified: file.lastModified,
-      });
-
-      newDemos.push({
-        id,
-        file: newFile,
-        title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
-        previewUrl,
-        isPlaying: false,
-        currentTime: 0,
-        duration: 0
-      })
-    }
-
-    if (newDemos.length > 0) {
-      updateField("demoTracks", [...existingDemos, ...newDemos])
+      updateField("trackDemo", file)
+      const reader = new FileReader()
+      reader.onload = () => {
+        updateField("trackDemoPreview", reader.result as string)
+        // Initialize audio context and analyser when file is loaded
+        initializeAudioContext(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -242,9 +165,8 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const handleSliderChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value)
     setCurrentTime(newTime)
-    const audioElement = audioRefs.current[e.target.id]
-    if (audioElement) {
-      audioElement.currentTime = newTime
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime
     }
   }
 
@@ -285,6 +207,12 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
     }
   }
 
+  const removeTrackDemo = () => {
+    updateField("trackDemo", null)
+    updateField("trackDemoPreview", null)
+    setIsPlaying(false)
+  }
+
   const removeVoiceNote = () => {
     updateField("voiceNote", null)
     updateField("voiceNotePreview", null)
@@ -314,74 +242,35 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
     }
   }
 
-  const togglePlayPause = (demoId: string) => {
-    const audioElement = audioRefs.current[demoId]
-    if (!audioElement) return
-
-    const demos = [...projectData.demoTracks]
-    const demoIndex = demos.findIndex(demo => demo.id === demoId)
-    if (demoIndex === -1) return
-
-    // Stop all other playing demos
-    demos.forEach((demo, index) => {
-      if (index !== demoIndex && demo.isPlaying) {
-        const otherAudio = audioRefs.current[demo.id]
-        if (otherAudio) {
-          otherAudio.pause()
-        }
-        demos[index] = { ...demo, isPlaying: false }
+  const togglePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
       }
-    })
+      setIsPlaying(!isPlaying)
+    }
+  }
 
-    // Toggle current demo
-    if (demos[demoIndex].isPlaying) {
-      audioElement.pause()
-      demos[demoIndex] = { ...demos[demoIndex], isPlaying: false }
-    } else {
-      audioElement.play()
-      demos[demoIndex] = { ...demos[demoIndex], isPlaying: true }
+  // Handle audio ended event
+  useEffect(() => {
+    const audioElement = audioRef.current
+
+    const handleEnded = () => {
+      setIsPlaying(false)
     }
 
-    updateField("demoTracks", demos)
-  }
-
-  const handleTimeUpdate = (demoId: string) => {
-    const audioElement = audioRefs.current[demoId]
-    if (!audioElement) return
-
-    const demos = [...projectData.demoTracks]
-    const demoIndex = demos.findIndex(demo => demo.id === demoId)
-    if (demoIndex === -1) return
-
-    demos[demoIndex] = {
-      ...demos[demoIndex],
-      currentTime: audioElement.currentTime,
-      duration: audioElement.duration
+    if (audioElement) {
+      audioElement.addEventListener("ended", handleEnded)
     }
 
-    updateField("demoTracks", demos)
-  }
-
-  const handleDemoTitleChange = (demoId: string, newTitle: string) => {
-    const demos = projectData.demoTracks.map(demo => 
-      demo.id === demoId ? { ...demo, title: newTitle } : demo
-    )
-    updateField("demoTracks", demos)
-  }
-
-  const removeDemoTrack = (demoId: string) => {
-    const demos = projectData.demoTracks.filter(demo => {
-      if (demo.id === demoId) {
-        // Cleanup blob URL when removing a demo
-        if (demo.previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(demo.previewUrl)
-        }
-        return false
+    return () => {
+      if (audioElement) {
+        audioElement.removeEventListener("ended", handleEnded)
       }
-      return true
-    })
-    updateField("demoTracks", demos)
-  }
+    }
+  }, [])
 
   const handleVoiceNoteChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -401,7 +290,6 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
       reader.readAsDataURL(file)
     }
   }
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
@@ -432,19 +320,12 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
     const isValid = validateForm()
     if (!isValid) return
 
-    if (!user?.id) {
-      setErrors((prev) => ({ ...prev, submit: 'User not authenticated' }))
-      return
-    }
-
     let coverArtUrl = null
+    let trackDemoUrl = null
     let voiceIntroUrl = null
 
     // 1. Upload files to Supabase Storage if present
     if (projectData.artwork) {
-      // IMPORTANT: Upload as raw File/Blob, not FormData or multipart
-      // This is the correct way using supabase-js:
-      // The 'file' argument should be a File or Blob, not wrapped in FormData
       console.log('Uploading artwork file:', projectData.artwork);
       const { data, error } = await supabase.storage
         .from('project-assets')
@@ -455,6 +336,16 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
         return
       }
       coverArtUrl = supabase.storage.from('project-assets').getPublicUrl(data.path).data.publicUrl
+    }
+    if (projectData.trackDemo) {
+      const { data, error } = await supabase.storage
+        .from('project-assets')
+        .upload(`track-demo/${crypto.randomUUID()}-${projectData.trackDemo.name}`, projectData.trackDemo)
+      if (error) {
+        setErrors((prev) => ({ ...prev, trackDemo: 'Failed to upload track demo' }))
+        return
+      }
+      trackDemoUrl = supabase.storage.from('project-assets').getPublicUrl(data.path).data.publicUrl
     }
     if (projectData.voiceNote) {
       const { data, error } = await supabase.storage
@@ -467,185 +358,29 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
       voiceIntroUrl = supabase.storage.from('project-assets').getPublicUrl(data.path).data.publicUrl
     }
 
-    let demoTrackUrls: { id: string; url: string; title: string }[] = []
-
-    // Upload all demo tracks
-    for (const demo of projectData.demoTracks) {
-      try {
-        console.log('Uploading demo track:', {
-          id: demo.id,
-          name: demo.file.name,
-          type: demo.file.type,
-          size: demo.file.size,
-          title: demo.title
-        });
-
-        if (!demo) {
-          continue;
-        }
-
-        if (!demo.file) {
-          continue;
-        }
-
-        if (!(demo.file instanceof File)) {
-          continue;
-        }
-
-        console.log('Uploading demo track:', {
-          id: demo.id,
-          name: demo.file.name,
-          type: demo.file.type,
-          size: demo.file.size,
-          title: demo.title
-        });
-
-        const sanitizedFileName = demo.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filePath = `track-demo/${crypto.randomUUID()}-${sanitizedFileName}`;
-        
-        const { data, error } = await supabase.storage
-          .from('project-assets')
-          .upload(filePath, demo.file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (error) {
-          console.error('Demo track upload error:', error);
-          setErrors((prev) => ({ 
-            ...prev, 
-            trackDemo: `Failed to upload demo track: ${error.message}` 
-          }));
-          return;
-        }
-
-        console.log('Demo track uploaded successfully:', data);
-        const url = supabase.storage.from('project-assets').getPublicUrl(data.path).data.publicUrl;
-        demoTrackUrls.push({ 
-          id: demo.id, 
-          url, 
-          title: demo.title || demo.file.name.replace(/\.[^/.]+$/, "") 
-        });
-      } catch (err) {
-        console.error('Unexpected error during demo track upload:', err);
-        console.error('Demo track that caused the error:', demo);
-        setErrors((prev) => ({ 
-          ...prev, 
-          trackDemo: 'An unexpected error occurred while uploading the demo track' 
-        }));
-        return;
-      }
-    }
-
     // 2. Insert project into Supabase DB
-    try {
-      console.log('Inserting project with data:', {
-        title: projectData.title,
-        artist_name: projectData.artistName,
-        description: projectData.description,
-        cover_art_url: coverArtUrl,
-        voice_intro_url: voiceIntroUrl,
-        privy_id: user.id,
-        status: 'draft'
-      });
+    const { data, error } = await supabase.from('projects').insert({
+      title: projectData.title,
+      artist_name: projectData.artistName,
+      description: projectData.description,
+      cover_art_url: coverArtUrl,
+      track_demo_url: trackDemoUrl,
+      voice_intro_url: voiceIntroUrl,
+      // status, platform_fee_pct, early_curator_shares use defaults
+    }).select('id')
 
-      // First, get or create a user record
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('privy_id', user.id)
-        .single();
-
-      if (userError && userError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        console.error('Error fetching user:', userError);
-        throw userError;
-      }
-
-      let userId;
-      if (!userData) {
-        // Create new user record
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
-          .insert({
-            privy_id: user.id,
-            email: user.email,
-            name: user.name
-          })
-          .select('id')
-          .single();
-
-        if (createError) {
-          console.error('Error creating user:', createError);
-          throw createError;
-        }
-        userId = newUser.id;
-      } else {
-        userId = userData.id;
-      }
-
-      // Now create the project with the user's UUID
-      const { data, error } = await supabase
-        .from('projects')
-        .insert({
-          title: projectData.title,
-          artist_name: projectData.artistName,
-          description: projectData.description,
-          cover_art_url: coverArtUrl,
-          voice_intro_url: voiceIntroUrl,
-          creator_id: userId,
-          status: 'draft',
-          platform_fee_pct: 5,
-          early_curator_shares: false
-        })
-        .select('id');
-
-      if (error) {
-        console.error('Project insertion error:', error);
-        setErrors((prev) => ({ 
-          ...prev, 
-          submit: `Failed to create project: ${error.message}` 
-        }));
-        return;
-      }
-
-      if (!data || !data[0]?.id) {
-        console.error('No project ID returned after insertion');
-        setErrors((prev) => ({ 
-          ...prev, 
-          submit: 'Failed to create project: No project ID returned' 
-        }));
-        return;
-      }
-
-      console.log('Project created successfully:', data[0]);
-
-      // 3. Save projectId in context/global state
-      if (typeof updateField === 'function') {
-        updateField('id' as keyof ProjectData, data[0].id);
-      }
-
-      // Create demo tracks
-      if (demoTrackUrls.length > 0) {
-        const { error: demoError } = await supabase
-          .from('demo_tracks')
-          .insert(demoTrackUrls.map(demo => ({
-            project_id: data[0].id,
-            title: demo.title,
-            url: demo.url
-          })));
-
-        if (demoError) throw demoError;
-      }
-
-      // Proceed to next step
-      onNext();
-    } catch (err) {
-      console.error('Unexpected error during project creation:', err);
-      setErrors((prev) => ({ 
-        ...prev, 
-        submit: 'An unexpected error occurred while creating the project' 
-      }));
+    if (error || !data || !data[0]?.id) {
+      setErrors((prev) => ({ ...prev, submit: 'Failed to create project' }))
+      return
     }
+
+    // 3. Save projectId in context/global state
+    if (typeof updateField === 'function') {
+      updateField('id' as keyof ProjectData, data[0].id)
+    }
+
+    // Proceed to next step
+    onNext()
   }
 
   // Format file size to human-readable format
@@ -695,21 +430,6 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
             className={errors.artistName ? "border-red-500" : ""}
           />
           {errors.artistName && <p className="text-red-500 text-sm mt-1">{errors.artistName}</p>}
-        </div>
-
-        {/* New Team Member Role Dropdown */}
-        <div>
-          <Label htmlFor="teamRole">Team Member Role</Label>
-          <select
-            id="teamRole"
-            value={selectedRole}
-            onChange={e => setSelectedRole(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            {ROLE_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
         </div>
 
         <div>
@@ -790,37 +510,29 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
         {/* Track Demo Upload Section */}
         <div className="mt-6">
           <Label htmlFor="trackDemo" className={errors.trackDemo ? "text-red-500" : ""}>
-            Upload Track Demos
+            Upload Track Demo (Optional)
           </Label>
-          <div className="mt-2 space-y-4">
-            {projectData.demoTracks?.map((demo) => (
-              <div key={demo.id} className="relative flex flex-col p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mt-2">
+            {projectData.trackDemoPreview ? (
+              <div className="relative flex flex-col p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex items-center mb-4">
                   <div className="mr-4">
                     <button
                       type="button"
-                      onClick={() => togglePlayPause(demo.id)}
+                      onClick={togglePlayPause}
                       className="w-10 h-10 flex items-center justify-center bg-[#0f172a] text-white rounded-full hover:bg-[#1e293b] transition-colors"
-                      aria-label={demo.isPlaying ? "Pause" : "Play"}
+                      aria-label={isPlaying ? "Pause" : "Play"}
                     >
-                      {demo.isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                     </button>
                   </div>
                   <div className="flex-grow">
-                    <input
-                      type="text"
-                      value={demo.title}
-                      onChange={(e) => handleDemoTitleChange(demo.id, e.target.value)}
-                      className="w-full bg-transparent border-none focus:ring-0 font-medium"
-                      placeholder="Enter demo title"
-                    />
-                    <p className="text-sm text-gray-500">
-                      {formatTime(demo.currentTime)} / {formatTime(demo.duration)}
-                    </p>
+                    <p className="font-medium truncate">{projectData.trackDemo?.name || "Track Demo"}</p>
+                    <p className="text-sm text-gray-500">Tap to preview</p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeDemoTrack(demo.id)}
+                    onClick={removeTrackDemo}
                     className="ml-2 text-gray-500 hover:text-red-500"
                     aria-label="Remove track demo"
                   >
@@ -828,59 +540,64 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                   </button>
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-full h-1 bg-gray-200 rounded-full">
-                  <div 
-                    className="h-full bg-[#0f172a] rounded-full"
-                    style={{ 
-                      width: `${(demo.currentTime / demo.duration) * 100 || 0}%` 
-                    }}
+                {/* Waveform Visualizer */}
+                <div className="w-full h-16 mb-2 bg-gray-100 rounded-lg overflow-hidden">
+                  <div className="w-full h-full flex items-center justify-center">
+                    {waveformData.length > 0 ? (
+                      <div className="w-full h-full flex items-center">
+                        {waveformData.map((value, index) => (
+                          <div
+                            key={index}
+                            className="h-full flex-1 mx-0.5 bg-[#0f172a] rounded-sm"
+                            style={{ height: `${value * 100}%` }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm">Loading waveform...</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress Slider */}
+                <div className="w-full flex items-center gap-2">
+                  <span className="text-xs text-gray-500">{formatTime(currentTime)}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration}
+                    value={currentTime}
+                    onChange={handleSliderChange}
+                    className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#0f172a]"
                   />
+                  <span className="text-xs text-gray-500">{formatTime(duration)}</span>
                 </div>
 
-                <audio
-                  ref={(el) => {
-                    if (el) {
-                      audioRefs.current[demo.id] = el
-                    }
-                  }}
-                  src={demo.previewUrl}
-                  onTimeUpdate={() => handleTimeUpdate(demo.id)}
-                  onEnded={() => {
-                    const demos = [...projectData.demoTracks]
-                    const index = demos.findIndex(d => d.id === demo.id)
-                    if (index !== -1) {
-                      demos[index] = { ...demos[index], isPlaying: false }
-                      updateField("demoTracks", demos)
-                    }
-                  }}
-                  className="hidden"
-                />
+                <audio ref={audioRef} src={projectData.trackDemoPreview} className="hidden" />
               </div>
-            ))}
-
-            <div className="flex items-center justify-center w-full">
-              <label
-                htmlFor="trackDemo"
-                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
-              >
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Music className="w-8 h-8 mb-3 text-gray-400" />
-                  <p className="mb-2 text-sm text-gray-500">
-                    <span className="font-semibold">Click to upload</span> demo tracks
-                  </p>
-                  <p className="text-xs text-gray-500">MP3, WAV, FLAC (Max. 20MB each)</p>
-                </div>
-                <input
-                  id="trackDemo"
-                  type="file"
-                  accept="audio/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleTrackDemoChange}
-                />
-              </label>
-            </div>
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <label
+                  htmlFor="trackDemo"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Music className="w-8 h-8 mb-3 text-gray-400" />
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Click to upload</span> a track demo
+                    </p>
+                    <p className="text-xs text-gray-500">MP3, WAV, FLAC (Max. 20MB)</p>
+                  </div>
+                  <input
+                    id="trackDemo"
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={handleTrackDemoChange}
+                  />
+                </label>
+              </div>
+            )}
             {errors.trackDemo && <p className="text-red-500 text-sm mt-1">{errors.trackDemo}</p>}
           </div>
         </div>
@@ -894,11 +611,11 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                 <div className="mr-4">
                   <button
                     type="button"
-                    onClick={removeVoiceNote}
+                    onClick={togglePlayPause}
                     className="w-10 h-10 flex items-center justify-center bg-[#0f172a] text-white rounded-full hover:bg-[#1e293b] transition-colors"
-                    aria-label="Remove voice note"
+                    aria-label={isPlaying ? "Pause" : "Play"}
                   >
-                    <Trash2 className="w-5 h-5" />
+                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                   </button>
                 </div>
                 <div className="flex-grow">
@@ -909,6 +626,14 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                   </div>
                   <audio ref={voiceNoteRef} src={projectData.voiceNotePreview} className="hidden" />
                 </div>
+                <button
+                  type="button"
+                  onClick={removeVoiceNote}
+                  className="ml-2 text-gray-500 hover:text-red-500"
+                  aria-label="Remove voice note"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             ) : (
               <div className="flex items-center justify-center w-full">

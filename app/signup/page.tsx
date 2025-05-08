@@ -14,7 +14,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectPath = searchParams?.get("redirect") || "/browse"
+  const redirectPath = searchParams.get("redirect") || "/browse"
   const { signup, isAuthenticated } = useAuth()
 
   useEffect(() => {

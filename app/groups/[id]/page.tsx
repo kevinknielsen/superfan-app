@@ -107,8 +107,7 @@ export default function GroupDetailPage() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   // Find the group based on the ID from the URL
-  const groupId = params?.id as string
-  const group = mockInvestmentGroups.find((g) => g.id === groupId) || mockInvestmentGroups[0]
+  const group = mockInvestmentGroups.find((g) => g.id === params.id) || mockInvestmentGroups[0]
 
   // Filter previous deals for this group
   const previousDeals = mockPreviousDeals.filter((deal) => deal.owner.name === group.owner.name)
