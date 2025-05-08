@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectPath = searchParams.get("redirect") || "/browse"
+  const redirectPath = searchParams?.get("redirect") || "/browse"
   const { login, isAuthenticated } = useAuth()
 
   useEffect(() => {
