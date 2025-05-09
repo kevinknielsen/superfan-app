@@ -1,16 +1,17 @@
-import Image from "next/image"
-import { User } from "lucide-react"
-import { getInitials } from "@/lib/image-utils"
+import Image from "next/image";
+import { User } from "lucide-react";
+import { getInitials } from "@/lib/image-utils";
 
 interface UserAvatarProps {
-  src?: string
-  name?: string
-  size?: number
-  className?: string
+  src?: string;
+  name?: string;
+  size?: number;
+  className?: string;
+  alt?: string;
 }
 
 export function UserAvatar({ src, name, size = 40, className = "" }: UserAvatarProps) {
-  const initials = name ? getInitials(name) : ""
+  const initials = name ? getInitials(name) : "";
 
   if (src) {
     return (
@@ -23,7 +24,7 @@ export function UserAvatar({ src, name, size = 40, className = "" }: UserAvatarP
           className="object-cover"
         />
       </div>
-    )
+    );
   }
 
   return (
@@ -33,5 +34,5 @@ export function UserAvatar({ src, name, size = 40, className = "" }: UserAvatarP
     >
       {initials || <User size={size * 0.5} />}
     </div>
-  )
+  );
 }

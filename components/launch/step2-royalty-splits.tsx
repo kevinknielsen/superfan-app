@@ -1,35 +1,48 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef, useCallback, memo } from "react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Card, CardContent } from "@/components/ui/card"
-import { Plus, Trash2, AlertCircle, Users, User, Briefcase, DollarSign, Mic, Music, Crown, Sparkles } from "lucide-react"
-import { useLaunchProject } from "@/contexts/launch-project-context"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Plus,
+  Trash2,
+  AlertCircle,
+  Users,
+  User,
+  Briefcase,
+  DollarSign,
+  Mic,
+  Music,
+  Crown,
+  Sparkles,
+} from "lucide-react";
+import { useLaunchProject } from "@/contexts/launch-project-context";
+import { motion, AnimatePresence } from "framer-motion";
+import supabase from "@/lib/supabaseClient";
 
 // Define collaborator types and interfaces
 interface Collaborator {
-  id: string
-  name: string
-  role: string
-  email: string
-  walletAddress: string
-  percentage: number
-  color: string
-  avatar?: string
-  emoji?: string
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  walletAddress: string;
+  percentage: number;
+  color: string;
+  avatar?: string;
+  emoji?: string;
 }
 
 interface CollaboratorCardProps {
-  collaborator: Collaborator
-  onDelete: () => void
-  onUpdate: (field: string, value: any) => void
-  isSelected: boolean
-  onSelect: () => void
-  error?: Record<string, string>
+  collaborator: Collaborator;
+  onDelete: () => void;
+  onUpdate: (field: string, value: any) => void;
+  isSelected: boolean;
+  onSelect: () => void;
+  error?: Record<string, string>;
 }
 
 // Role configuration
@@ -38,7 +51,7 @@ const ROLES = {
   Producer: { icon: <Mic className="w-4 h-4" />, color: "#10B981", label: "Producer" },
   Mixer: { icon: <Sparkles className="w-4 h-4" />, color: "#8B5CF6", label: "Mixer" },
   Curator: { icon: <Crown className="w-4 h-4" />, color: "#F59E0B", label: "Curator" },
-}
+};
 
 // Color palette for collaborators
 const COLORS = [
@@ -54,17 +67,17 @@ const COLORS = [
   "#6366F1", // indigo
   "#D946EF", // fuchsia
   "#F43F5E", // rose
-]
+];
 
 // Add color variations for roles
 const getRoleColor = (role: string, index: number) => {
-  const baseColor = ROLES[role as keyof typeof ROLES]?.color || ROLES.Artist.color
-  if (index === 0) return baseColor
-  
+  const baseColor = ROLES[role as keyof typeof ROLES]?.color || ROLES.Artist.color;
+  if (index === 0) return baseColor;
+
   // Create variations of the base color for duplicate roles
-  const hueOffset = (index * 30) % 360
-  return `hsl(${parseInt(baseColor.slice(1), 16) + hueOffset}, 70%, 50%)`
-}
+  const hueOffset = (index * 30) % 360;
+  return `hsl(${parseInt(baseColor.slice(1), 16) + hueOffset}, 70%, 50%)`;
+};
 
 // Add these styles to your global CSS file (styles/globals.css)
 const sliderStyles = `
@@ -105,7 +118,7 @@ const sliderStyles = `
     transform: scale(1.2);
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
   }
-`
+`;
 
 // Update RangeSlider component
 const RangeSlider = memo(function RangeSlider({
@@ -115,33 +128,37 @@ const RangeSlider = memo(function RangeSlider({
   max,
   color,
   showValue = true,
+  collaboratorName,
 }: {
-  value: number
-  onChange: (value: number) => void
-  min: number
-  max: number
-  color: string
-  showValue?: boolean
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  color: string;
+  showValue?: boolean;
+  collaboratorName?: string;
 }) {
-  const [isChanging, setIsChanging] = useState(false)
+  const [isChanging, setIsChanging] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsChanging(true)
-    onChange(Number(e.target.value))
-    setTimeout(() => setIsChanging(false), 300)
-  }
+    setIsChanging(true);
+    onChange(Number(e.target.value));
+    setTimeout(() => setIsChanging(false), 300);
+  };
 
-  const percentage = ((value - min) / (max - min)) * 100
+  const percentage = ((value - min) / (max - min)) * 100;
 
   return (
     <div className="slider-container">
       <div className="slider-track">
         <motion.div
           className="slider-fill"
-          style={{ 
-            backgroundColor: color,
-            '--slider-value': `${percentage}%`
-          } as React.CSSProperties}
+          style={
+            {
+              backgroundColor: color,
+              "--slider-value": `${percentage}%`,
+            } as React.CSSProperties
+          }
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
@@ -155,19 +172,16 @@ const RangeSlider = memo(function RangeSlider({
         onChange={handleChange}
         className="slider-input"
         style={{ color }}
+        aria-label={`Revenue share for ${collaboratorName || "collaborator"}`}
       />
       {showValue && (
-        <motion.div
-          className="slider-value"
-          animate={{ scale: isChanging ? 1.1 : 1 }}
-          transition={{ duration: 0.2 }}
-        >
+        <motion.div className="slider-value" animate={{ scale: isChanging ? 1.1 : 1 }} transition={{ duration: 0.2 }}>
           {value}%
         </motion.div>
       )}
     </div>
-  )
-})
+  );
+});
 
 // Update CollaboratorCard component
 const CollaboratorCard = memo(function CollaboratorCard({
@@ -177,9 +191,11 @@ const CollaboratorCard = memo(function CollaboratorCard({
   isSelected,
   onSelect,
   error,
-}: CollaboratorCardProps) {
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const roleConfig = ROLES[collaborator.role as keyof typeof ROLES] || ROLES.Artist
+  toggleEmojiPicker,
+  emojiPickerState,
+}: CollaboratorCardProps & { toggleEmojiPicker: (id: string) => void; emojiPickerState: Record<string, boolean> }) {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const roleConfig = ROLES[collaborator.role as keyof typeof ROLES] || ROLES.Artist;
 
   return (
     <motion.div
@@ -219,22 +235,22 @@ const CollaboratorCard = memo(function CollaboratorCard({
                     size="sm"
                     className="w-8 h-8 p-0"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      setShowEmojiPicker(!showEmojiPicker)
+                      e.stopPropagation();
+                      toggleEmojiPicker(collaborator.id);
                     }}
                   >
                     {collaborator.emoji || "👤"}
                   </Button>
-                  {showEmojiPicker && (
+                  {emojiPickerState[collaborator.id] && (
                     <div className="absolute top-10 left-0 bg-white p-2 rounded-lg shadow-lg">
                       {/* Emoji picker implementation would go here */}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          onUpdate("emoji", "🎤")
-                          setShowEmojiPicker(false)
+                          e.stopPropagation();
+                          onUpdate("emoji", "🎤");
+                          toggleEmojiPicker(collaborator.id);
                         }}
                       >
                         🎤
@@ -243,9 +259,9 @@ const CollaboratorCard = memo(function CollaboratorCard({
                         variant="ghost"
                         size="sm"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          onUpdate("emoji", "🎸")
-                          setShowEmojiPicker(false)
+                          e.stopPropagation();
+                          onUpdate("emoji", "🎸");
+                          toggleEmojiPicker(collaborator.id);
                         }}
                       >
                         🎸
@@ -254,9 +270,9 @@ const CollaboratorCard = memo(function CollaboratorCard({
                         variant="ghost"
                         size="sm"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          onUpdate("emoji", "🎹")
-                          setShowEmojiPicker(false)
+                          e.stopPropagation();
+                          onUpdate("emoji", "🎹");
+                          toggleEmojiPicker(collaborator.id);
                         }}
                       >
                         🎹
@@ -271,8 +287,8 @@ const CollaboratorCard = memo(function CollaboratorCard({
                 variant="ghost"
                 size="sm"
                 onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete()
+                  e.stopPropagation();
+                  onDelete();
                 }}
                 className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
               >
@@ -314,7 +330,10 @@ const CollaboratorCard = memo(function CollaboratorCard({
               </div>
 
               <div>
-                <Label htmlFor="wallet" className={`text-xs ${error?.walletAddress ? "text-red-500" : "text-gray-500"}`}>
+                <Label
+                  htmlFor="wallet"
+                  className={`text-xs ${error?.walletAddress ? "text-red-500" : "text-gray-500"}`}
+                >
                   Wallet (Optional)
                 </Label>
                 <Input
@@ -344,6 +363,7 @@ const CollaboratorCard = memo(function CollaboratorCard({
                 min={0}
                 max={100}
                 color={roleConfig.color}
+                collaboratorName={collaborator.name}
               />
               {error?.percentage && <p className="text-red-500 text-xs mt-1">{error.percentage}</p>}
             </div>
@@ -351,81 +371,81 @@ const CollaboratorCard = memo(function CollaboratorCard({
         </CardContent>
       </Card>
     </motion.div>
-  )
-})
+  );
+});
 
 // SplitPieChart component
 const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collaborators: Collaborator[] }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [hoveredSlice, setHoveredSlice] = useState<number | null>(null)
-  const [activeSlice, setActiveSlice] = useState<number | null>(null)
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hoveredSlice, setHoveredSlice] = useState<number | null>(null);
+  const [activeSlice, setActiveSlice] = useState<number | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (!canvasRef.current) return
+    if (!canvasRef.current) return;
 
-    const ctx = canvasRef.current.getContext("2d")
-    if (!ctx) return
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
 
-    const canvas = canvasRef.current
-    const width = canvas.width
-    const height = canvas.height
-    const radius = Math.min(width, height) / 2
-    const centerX = width / 2
-    const centerY = height / 2
+    const canvas = canvasRef.current;
+    const width = canvas.width;
+    const height = canvas.height;
+    const radius = Math.min(width, height) / 2;
+    const centerX = width / 2;
+    const centerY = height / 2;
 
     // Clear canvas
-    ctx.clearRect(0, 0, width, height)
+    ctx.clearRect(0, 0, width, height);
 
     // Create a map to track role counts
-    const roleCount = new Map<string, number>()
+    const roleCount = new Map<string, number>();
 
     // Filter out collaborators with 0%
-    const validCollaborators = collaborators.filter((c) => c.percentage > 0)
+    const validCollaborators = collaborators.filter((c) => c.percentage > 0);
 
     // Draw pie chart
-    let startAngle = 0
+    let startAngle = 0;
     validCollaborators.forEach((collaborator) => {
       // Get or increment role count
-      const count = roleCount.get(collaborator.role) || 0
-      roleCount.set(collaborator.role, count + 1)
+      const count = roleCount.get(collaborator.role) || 0;
+      roleCount.set(collaborator.role, count + 1);
 
-      const sliceAngle = (collaborator.percentage / 100) * 2 * Math.PI
-      const color = getRoleColor(collaborator.role, count)
+      const sliceAngle = (collaborator.percentage / 100) * 2 * Math.PI;
+      const color = getRoleColor(collaborator.role, count);
 
-      ctx.beginPath()
-      ctx.moveTo(centerX, centerY)
-      ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle)
-      ctx.closePath()
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+      ctx.closePath();
 
       // Add hover effect
-      const isHovered = hoveredSlice === validCollaborators.indexOf(collaborator)
-      ctx.fillStyle = isHovered ? `${color}CC` : color
-      ctx.fill()
+      const isHovered = hoveredSlice === validCollaborators.indexOf(collaborator);
+      ctx.fillStyle = isHovered ? `${color}CC` : color;
+      ctx.fill();
 
       // Draw label if slice is big enough
       if (collaborator.percentage >= 5) {
-        const labelAngle = startAngle + sliceAngle / 2
-        const labelRadius = radius * 0.7
-        const labelX = centerX + Math.cos(labelAngle) * labelRadius
-        const labelY = centerY + Math.sin(labelAngle) * labelRadius
+        const labelAngle = startAngle + sliceAngle / 2;
+        const labelRadius = radius * 0.7;
+        const labelX = centerX + Math.cos(labelAngle) * labelRadius;
+        const labelY = centerY + Math.sin(labelAngle) * labelRadius;
 
-        ctx.fillStyle = "#FFFFFF"
-        ctx.font = "bold 12px Arial"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "middle"
-        ctx.fillText(`${collaborator.percentage}%`, labelX, labelY)
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 12px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`${collaborator.percentage}%`, labelX, labelY);
       }
 
-      startAngle += sliceAngle
-    })
+      startAngle += sliceAngle;
+    });
 
     // Draw center circle (hole)
-    ctx.beginPath()
-    ctx.arc(centerX, centerY, radius * 0.5, 0, 2 * Math.PI)
-    ctx.fillStyle = "#FFFFFF"
-    ctx.fill()
-  }, [collaborators, hoveredSlice])
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * 0.5, 0, 2 * Math.PI);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fill();
+  }, [collaborators, hoveredSlice]);
 
   return (
     <div className="flex flex-col items-center">
@@ -438,29 +458,29 @@ const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collabora
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
           onMouseMove={(e) => {
-            const canvas = canvasRef.current
-            if (!canvas) return
+            const canvas = canvasRef.current;
+            if (!canvas) return;
 
-            const rect = canvas.getBoundingClientRect()
-            const x = e.clientX - rect.left - canvas.width / 2
-            const y = e.clientY - rect.top - canvas.height / 2
-            const angle = Math.atan2(y, x)
-            const normalizedAngle = (angle + Math.PI * 2) % (Math.PI * 2)
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left - canvas.width / 2;
+            const y = e.clientY - rect.top - canvas.height / 2;
+            const angle = Math.atan2(y, x);
+            const normalizedAngle = (angle + Math.PI * 2) % (Math.PI * 2);
 
-            let startAngle = 0
+            let startAngle = 0;
             collaborators.forEach((collaborator, index) => {
-              const sliceAngle = (collaborator.percentage / 100) * 2 * Math.PI
+              const sliceAngle = (collaborator.percentage / 100) * 2 * Math.PI;
               if (normalizedAngle >= startAngle && normalizedAngle < startAngle + sliceAngle) {
-                setHoveredSlice(index)
-                setActiveSlice(index)
-                setTooltipPosition({ x: e.clientX, y: e.clientY })
+                setHoveredSlice(index);
+                setActiveSlice(index);
+                setTooltipPosition({ x: e.clientX, y: e.clientY });
               }
-              startAngle += sliceAngle
-            })
+              startAngle += sliceAngle;
+            });
           }}
           onMouseLeave={() => {
-            setHoveredSlice(null)
-            setActiveSlice(null)
+            setHoveredSlice(null);
+            setActiveSlice(null);
           }}
         />
         {hoveredSlice !== null && (
@@ -491,7 +511,7 @@ const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collabora
       </div>
       <motion.div className="grid grid-cols-2 gap-2 w-full">
         {collaborators.map((collaborator, index) => {
-          const roleConfig = ROLES[collaborator.role as keyof typeof ROLES] || ROLES.Artist
+          const roleConfig = ROLES[collaborator.role as keyof typeof ROLES] || ROLES.Artist;
           return (
             <motion.div
               key={collaborator.id}
@@ -507,12 +527,12 @@ const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collabora
               <span className="truncate">{collaborator.name || collaborator.role}</span>
               <span className="ml-1 font-medium">{collaborator.percentage}%</span>
             </motion.div>
-          )
+          );
         })}
       </motion.div>
     </div>
-  )
-})
+  );
+});
 
 // Simplified FundingControls component to fix the infinite loop
 const FundingControls = memo(function FundingControls({
@@ -522,21 +542,21 @@ const FundingControls = memo(function FundingControls({
   onCuratorSharesChange,
   onCuratorPercentageChange,
 }: {
-  enableCuratorShares: boolean
-  curatorPercentage: number
-  platformFee: number
-  onCuratorSharesChange: (checked: boolean) => void
-  onCuratorPercentageChange: (value: number) => void
+  enableCuratorShares: boolean;
+  curatorPercentage: number;
+  platformFee: number;
+  onCuratorSharesChange: (checked: boolean) => void;
+  onCuratorPercentageChange: (value: number) => void;
 }) {
-  const [isIconPulsing, setIsIconPulsing] = useState(false)
+  const [isIconPulsing, setIsIconPulsing] = useState(false);
 
   const handleToggle = (checked: boolean) => {
-    onCuratorSharesChange(checked)
+    onCuratorSharesChange(checked);
     if (checked) {
-      setIsIconPulsing(true)
-      setTimeout(() => setIsIconPulsing(false), 1000)
+      setIsIconPulsing(true);
+      setTimeout(() => setIsIconPulsing(false), 1000);
     }
-  }
+  };
 
   return (
     <Card>
@@ -566,11 +586,8 @@ const FundingControls = memo(function FundingControls({
                 <p className="text-xs text-gray-500">Reward early supporters with additional revenue share</p>
               </div>
               <div className="flex items-center gap-2">
-                <motion.div
-                  animate={{ scale: isIconPulsing ? [1, 1.2, 1] : 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <Crown className={`curator-icon ${enableCuratorShares ? 'active' : ''}`} />
+                <motion.div animate={{ scale: isIconPulsing ? [1, 1.2, 1] : 1 }} transition={{ duration: 0.5 }}>
+                  <Crown className={`curator-icon ${enableCuratorShares ? "active" : ""}`} />
                 </motion.div>
                 <Switch id="curator-shares" checked={enableCuratorShares} onCheckedChange={handleToggle} />
               </div>
@@ -596,6 +613,7 @@ const FundingControls = memo(function FundingControls({
                       min={1}
                       max={20}
                       color={ROLES.Curator.color}
+                      collaboratorName="Curator"
                     />
                   </div>
                 </motion.div>
@@ -605,8 +623,8 @@ const FundingControls = memo(function FundingControls({
         </div>
       </CardContent>
     </Card>
-  )
-})
+  );
+});
 
 // DealSummary component
 const DealSummary = memo(function DealSummary({
@@ -615,17 +633,17 @@ const DealSummary = memo(function DealSummary({
   curatorPercentage,
   enableCuratorShares,
 }: {
-  collaborators: Collaborator[]
-  platformFee: number
-  curatorPercentage: number
-  enableCuratorShares: boolean
+  collaborators: Collaborator[];
+  platformFee: number;
+  curatorPercentage: number;
+  enableCuratorShares: boolean;
 }) {
   // Calculate artist's final share
-  const artistCollaborator = collaborators.find((c) => c.role === "Artist")
-  const artistPercentage = artistCollaborator?.percentage || 0
+  const artistCollaborator = collaborators.find((c) => c.role === "Artist");
+  const artistPercentage = artistCollaborator?.percentage || 0;
 
-  const totalDeductions = platformFee + (enableCuratorShares ? curatorPercentage : 0)
-  const artistFinalShare = artistPercentage * (1 - totalDeductions / 100)
+  const totalDeductions = platformFee + (enableCuratorShares ? curatorPercentage : 0);
+  const artistFinalShare = artistPercentage * (1 - totalDeductions / 100);
 
   return (
     <Card>
@@ -666,19 +684,55 @@ const DealSummary = memo(function DealSummary({
         </div>
       </CardContent>
     </Card>
-  )
-})
+  );
+});
+
+// Reusable FormInput component
+function FormInput({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+  error,
+  type = "text",
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  error?: string;
+  type?: string;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id} className={`text-xs ${error ? "text-red-500" : "text-gray-500"}`}>
+        {label}
+      </Label>
+      <Input
+        id={id}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        type={type}
+        className={`mt-1 ${error ? "border-red-500" : ""}`}
+      />
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    </div>
+  );
+}
 
 // Main component
 interface Step2Props {
-  onNext: () => void
-  onPrevious: () => void
-  isFirstStep: boolean
-  isLastStep: boolean
+  onNext: () => void;
+  onPrevious: () => void;
+  isFirstStep: boolean;
+  isLastStep: boolean;
 }
 
 export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
-  const { projectData, updateField } = useLaunchProject()
+  const { projectData, updateField } = useLaunchProject();
 
   // Initialize state with artist as first collaborator
   const [collaborators, setCollaborators] = useState<Collaborator[]>(() => [
@@ -691,49 +745,34 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
       percentage: 100,
       color: COLORS[0],
     },
-  ])
+  ]);
 
-  const [selectedCollaborator, setSelectedCollaborator] = useState<string>("artist")
-  const [errors, setErrors] = useState<Record<string, Record<string, string>>>({})
-  const [enableCuratorShares, setEnableCuratorShares] = useState<boolean>(false)
-  const [curatorPercentage, setCuratorPercentage] = useState<number>(5)
-  const platformFee = 2.5 // Fixed platform fee
+  const [selectedCollaborator, setSelectedCollaborator] = useState<string>("artist");
+  const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
+  const [enableCuratorShares, setEnableCuratorShares] = useState<boolean>(false);
+  const [curatorPercentage, setCuratorPercentage] = useState<number>(5);
+  const platformFee = 2.5; // Fixed platform fee
+  const [emojiPickerState, setEmojiPickerState] = useState<Record<string, boolean>>({});
 
-  // Use a ref to track if we've already synced with context
-  // This prevents the infinite update loop
-  const initialSyncDone = useRef(false)
-
-  // Only sync with context when collaborators change AND it's not the initial render
-  useEffect(() => {
-    // Skip the first render to prevent the loop
-    if (!initialSyncDone.current) {
-      initialSyncDone.current = true
-      return
-    }
-
-    const royaltySplits = collaborators.map((collab) => ({
-      id: collab.id,
-      recipient: collab.email || collab.walletAddress,
-      percentage: collab.percentage,
-    }))
-
-    updateField("royaltySplits", royaltySplits)
-  }, [collaborators, updateField])
+  // Toggle emoji picker visibility
+  const toggleEmojiPicker = (id: string) => {
+    setEmojiPickerState((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Add a new collaborator
   const addCollaborator = useCallback(() => {
-    const newId = `collab-${Date.now()}`
-    const newColor = COLORS[collaborators.length % COLORS.length]
+    const newId = `collab-${Date.now()}`;
+    const newColor = COLORS[collaborators.length % COLORS.length];
 
     // Adjust percentages to make room for new collaborator
     const newCollaborators = collaborators.map((c) => ({
       ...c,
       percentage: Math.max(1, Math.floor(c.percentage * 0.8)), // Reduce existing by 20%
-    }))
+    }));
 
     // Calculate remaining percentage
-    const usedPercentage = newCollaborators.reduce((sum, c) => sum + c.percentage, 0)
-    const remainingPercentage = 100 - usedPercentage
+    const usedPercentage = newCollaborators.reduce((sum, c) => sum + c.percentage, 0);
+    const remainingPercentage = 100 - usedPercentage;
 
     setCollaborators([
       ...newCollaborators,
@@ -746,163 +785,207 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
         percentage: remainingPercentage,
         color: newColor,
       },
-    ])
+    ]);
 
-    setSelectedCollaborator(newId)
-  }, [collaborators])
+    setSelectedCollaborator(newId);
+  }, [collaborators]);
 
   // Delete a collaborator
   const deleteCollaborator = useCallback(
     (id: string) => {
-      const deletedCollab = collaborators.find((c) => c.id === id)
-      if (!deletedCollab) return
+      const deletedCollab = collaborators.find((c) => c.id === id);
+      if (!deletedCollab) return;
 
-      const remainingCollabs = collaborators.filter((c) => c.id !== id)
+      const remainingCollabs = collaborators.filter((c) => c.id !== id);
 
       // Redistribute the deleted collaborator's percentage
-      const totalRemainingPercentage = remainingCollabs.reduce((sum, c) => sum + c.percentage, 0)
+      const totalRemainingPercentage = remainingCollabs.reduce((sum, c) => sum + c.percentage, 0);
 
       if (totalRemainingPercentage === 0) {
         // If all remaining have 0%, give 100% to the first one
-        remainingCollabs[0].percentage = 100
+        remainingCollabs[0].percentage = 100;
       } else {
         // Otherwise redistribute proportionally
         remainingCollabs.forEach((collab) => {
-          collab.percentage = Math.round((collab.percentage / totalRemainingPercentage) * 100)
-        })
+          collab.percentage = Math.round((collab.percentage / totalRemainingPercentage) * 100);
+        });
 
         // Ensure we add up to exactly 100%
-        const adjustedTotal = remainingCollabs.reduce((sum, c) => sum + c.percentage, 0)
+        const adjustedTotal = remainingCollabs.reduce((sum, c) => sum + c.percentage, 0);
         if (adjustedTotal !== 100 && remainingCollabs.length > 0) {
-          remainingCollabs[0].percentage += 100 - adjustedTotal
+          remainingCollabs[0].percentage += 100 - adjustedTotal;
         }
       }
 
-      setCollaborators(remainingCollabs)
-      setSelectedCollaborator(remainingCollabs[0]?.id || "")
+      setCollaborators(remainingCollabs);
+      setSelectedCollaborator(remainingCollabs[0]?.id || "");
     },
-    [collaborators],
-  )
+    [collaborators]
+  );
 
   // Update a collaborator's field
   const updateCollaborator = useCallback((id: string, field: string, value: any) => {
     if (field === "percentage") {
       setCollaborators((prev) => {
-        const currentCollab = prev.find((c) => c.id === id)
-        if (!currentCollab) return prev
+        const currentCollab = prev.find((c) => c.id === id);
+        if (!currentCollab) return prev;
 
-        const oldPercentage = currentCollab.percentage
-        const difference = value - oldPercentage
+        const oldPercentage = currentCollab.percentage;
+        const difference = value - oldPercentage;
 
-        if (difference === 0) return prev
+        if (difference === 0) return prev;
 
-        const othersTotal = prev.filter((c) => c.id !== id).reduce((sum, c) => sum + c.percentage, 0)
+        const othersTotal = prev.filter((c) => c.id !== id).reduce((sum, c) => sum + c.percentage, 0);
 
         if (othersTotal === 0) {
-          return prev.map((c) => (c.id === id ? { ...c, percentage: value } : c))
+          return prev.map((c) => (c.id === id ? { ...c, percentage: value } : c));
         }
 
         // Create a new array with updated percentages
         const updatedCollabs = prev.map((c) => {
-          if (c.id === id) return { ...c, percentage: value }
+          if (c.id === id) return { ...c, percentage: value };
 
           // Adjust other percentages proportionally
-          const newPercentage = Math.max(0, Math.round(c.percentage - difference * (c.percentage / othersTotal)))
-          return { ...c, percentage: newPercentage }
-        })
+          const newPercentage = Math.max(0, Math.round(c.percentage - difference * (c.percentage / othersTotal)));
+          return { ...c, percentage: newPercentage };
+        });
 
         // Ensure total is exactly 100%
-        const total = updatedCollabs.reduce((sum, c) => sum + c.percentage, 0)
+        const total = updatedCollabs.reduce((sum, c) => sum + c.percentage, 0);
         if (total !== 100) {
           // Find the largest share that's not the one we just changed
           const sortedOthers = [...updatedCollabs]
             .filter((c) => c.id !== id)
-            .sort((a, b) => b.percentage - a.percentage)
+            .sort((a, b) => b.percentage - a.percentage);
 
           if (sortedOthers.length > 0) {
             return updatedCollabs.map((c) => {
               if (c.id === sortedOthers[0].id) {
-                return { ...c, percentage: c.percentage + (100 - total) }
+                return { ...c, percentage: c.percentage + (100 - total) };
               }
-              return c
-            })
+              return c;
+            });
           }
         }
 
-        return updatedCollabs
-      })
+        return updatedCollabs;
+      });
     } else {
-      setCollaborators((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)))
+      setCollaborators((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
     }
-  }, [])
+  }, []);
 
   // Handle curator shares toggle
   const handleCuratorSharesChange = useCallback((checked: boolean) => {
-    setEnableCuratorShares(checked)
-  }, [])
+    setEnableCuratorShares(checked);
+  }, []);
 
   // Handle curator percentage change
   const handleCuratorPercentageChange = useCallback((value: number) => {
-    setCuratorPercentage(value)
-  }, [])
+    setCuratorPercentage(value);
+  }, []);
 
   // Validate the form
   const validateForm = useCallback(() => {
-    const newErrors: Record<string, Record<string, string>> = {}
-    let isValid = true
+    const newErrors: Record<string, Record<string, string>> = {};
+    let isValid = true;
 
     collaborators.forEach((collab) => {
-      const collabErrors: Record<string, string> = {}
+      const collabErrors: Record<string, string> = {};
 
       if (!collab.name.trim()) {
-        collabErrors.name = "Name is required"
-        isValid = false
+        collabErrors.name = "Name is required";
+        isValid = false;
       }
 
       if (!collab.email.trim()) {
-        collabErrors.email = "Email is required"
-        isValid = false
+        collabErrors.email = "Email is required";
+        isValid = false;
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(collab.email)) {
-        collabErrors.email = "Invalid email format"
-        isValid = false
+        collabErrors.email = "Invalid email format";
+        isValid = false;
       }
 
       if (collab.walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(collab.walletAddress)) {
-        collabErrors.walletAddress = "Invalid wallet address"
-        isValid = false
+        collabErrors.walletAddress = "Invalid wallet address";
+        isValid = false;
       }
 
       if (collab.percentage <= 0) {
-        collabErrors.percentage = "Must be greater than 0%"
-        isValid = false
+        collabErrors.percentage = "Must be greater than 0%";
+        isValid = false;
       }
 
       if (Object.keys(collabErrors).length > 0) {
-        newErrors[collab.id] = collabErrors
+        newErrors[collab.id] = collabErrors;
       }
-    })
+    });
 
     // Check total percentage
-    const totalPercentage = collaborators.reduce((sum, c) => sum + c.percentage, 0)
+    const totalPercentage = collaborators.reduce((sum, c) => sum + c.percentage, 0);
     if (totalPercentage !== 100) {
-      isValid = false
+      isValid = false;
       // Add a general error
-      newErrors.general = { percentage: "Total percentage must equal 100%" }
+      newErrors.general = { percentage: "Total percentage must equal 100%" };
     }
 
-    setErrors(newErrors)
-    return isValid
-  }, [collaborators])
+    setErrors(newErrors);
+    return isValid;
+  }, [collaborators]);
+
+  // Custom validation to ensure total percentage does not exceed 100%
+  const validateTotalPercentage = (collaborators: Collaborator[]) => {
+    const total = collaborators.reduce((sum, c) => sum + c.percentage, 0);
+    if (total > 100) {
+      return "Total revenue share cannot exceed 100%";
+    }
+    return null;
+  };
 
   // Handle next button click
-  const handleNext = useCallback(() => {
-    if (validateForm()) {
-      onNext()
+  const handleNext = useCallback(async () => {
+    if (!projectData.id) {
+      setErrors((prev) => ({ ...prev, general: { id: "Project ID missing. Please complete Project Info step." } }));
+      return;
     }
-  }, [validateForm, onNext])
+    if (!validateForm()) return;
+
+    // Update context with royalty splits before Supabase insert
+    const royaltySplits = collaborators.map((collab) => ({
+      id: collab.id,
+      recipient: collab.email || collab.walletAddress,
+      percentage: collab.percentage,
+    }));
+    updateField("royaltySplits", royaltySplits);
+
+    // Prepare team members array for Supabase
+    const teamMembersArray = collaborators.map((collab) => ({
+      project_id: projectData.id,
+      role: collab.role,
+      name: collab.name,
+      email: collab.email,
+      wallet_address: collab.walletAddress,
+      revenue_share_pct: collab.percentage,
+    }));
+
+    // Validate sum = 100
+    const totalPct = teamMembersArray.reduce((sum, m) => sum + m.revenue_share_pct, 0);
+    if (totalPct !== 100) {
+      setErrors((prev) => ({ ...prev, general: { percentage: "Total percentage must equal 100%" } }));
+      return;
+    }
+
+    // Insert into Supabase
+    const { error } = await supabase.from("team_members").insert(teamMembersArray);
+    if (error) {
+      setErrors((prev) => ({ ...prev, general: { submit: "Failed to save team members: " + error.message } }));
+      return;
+    }
+    onNext();
+  }, [validateForm, onNext, collaborators, projectData.id, updateField]);
 
   // Calculate total percentage
-  const totalPercentage = collaborators.reduce((sum, c) => sum + c.percentage, 0)
+  const totalPercentage = collaborators.reduce((sum, c) => sum + c.percentage, 0);
 
   return (
     <div className="space-y-6">
@@ -942,9 +1025,14 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
                 isSelected={selectedCollaborator === collaborator.id}
                 onSelect={() => setSelectedCollaborator(collaborator.id)}
                 error={errors[collaborator.id]}
+                toggleEmojiPicker={toggleEmojiPicker}
+                emojiPickerState={emojiPickerState}
               />
             ))}
           </div>
+
+          {/* Total percentage display */}
+          <div className="text-right text-sm text-gray-500">Total Revenue Share: {totalPercentage}%</div>
         </div>
 
         {/* Right column - Visualization and settings */}
@@ -986,5 +1074,5 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
         </Button>
       </div>
     </div>
-  )
+  );
 }
