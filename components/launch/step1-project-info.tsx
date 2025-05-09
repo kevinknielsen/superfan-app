@@ -42,7 +42,7 @@ function FileUpload({
   accept: string;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   error?: string;
-  preview?: string;
+  preview?: string | null;
   onRemove?: () => void;
 }) {
   return (
@@ -84,6 +84,17 @@ function FileUpload({
     </div>
   );
 }
+
+// Utility function to sanitize file names
+const sanitizeFileName = (fileName: string): string => {
+  return fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+};
+
+// Utility function to create a sanitized file
+const createSanitizedFile = (file: File): File => {
+  const sanitizedFileName = sanitizeFileName(file.name);
+  return new File([file], sanitizedFileName, { type: file.type });
+};
 
 export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const { projectData, updateField } = useLaunchProject();
@@ -129,7 +140,10 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      updateField("artwork", file);
+      // Use the utility function to create a sanitized file
+      const sanitizedFile = createSanitizedFile(file);
+
+      updateField("artwork", sanitizedFile);
 
       // Create preview URL
       const previewUrl = URL.createObjectURL(file);
@@ -152,7 +166,11 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
         }));
         return;
       }
-      updateField("trackDemo", file);
+
+      // Use the utility function to create a sanitized file
+      const sanitizedFile = createSanitizedFile(file);
+
+      updateField("trackDemo", sanitizedFile);
       const reader = new FileReader();
       reader.onload = () => {
         updateField("trackDemoPreview", reader.result as string);
@@ -231,7 +249,7 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
     const files = e.target.files;
     if (files && files.length > 0) {
       // Convert FileList to array and add to existing files
-      const newFiles = Array.from(files);
+      const newFiles = Array.from(files).map((file) => createSanitizedFile(file));
       const currentFiles = [...projectData.additionalFiles];
 
       // Add new files to the array
@@ -333,7 +351,11 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
         }));
         return;
       }
-      updateField("voiceNote", file);
+
+      // Use the utility function to create a sanitized file
+      const sanitizedFile = createSanitizedFile(file);
+
+      updateField("voiceNote", sanitizedFile);
       const reader = new FileReader();
       reader.onload = () => {
         updateField("voiceNotePreview", reader.result as string);
