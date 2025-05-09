@@ -46,6 +46,14 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
 
     setIsLoading(true);
     try {
+      // Update project status to published
+      const { error: updateError } = await supabase
+        .from("projects")
+        .update({ status: "published" })
+        .eq("id", projectData.id);
+      
+      if (updateError) throw new Error("Failed to update project status: " + updateError.message);
+
       if (selectedCurators.length > 0) {
         const pitches = selectedCurators.map((curator) => ({
           project_id: projectData.id,
