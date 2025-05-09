@@ -8,7 +8,30 @@ import ProtectedRoute from "@/components/protected-route";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types/supabase";
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: string) => void }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+      setIsDeleting(true);
+      try {
+        const supabase = createClient();
+        const { error } = await supabase.from("projects").delete().eq("id", project.id);
+        
+        if (error) {
+          throw error;
+        }
+        
+        onDelete(project.id);
+      } catch (error) {
+        console.error("Error deleting project:", error);
+        alert("Failed to delete project. Please try again.");
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
       <div className="p-6">
@@ -55,6 +78,15 @@ function ProjectCard({ project }: { project: Project }) {
                 <span className="text-gray-500">Created:</span>
                 <span className="ml-2 font-medium">{new Date(project.created_at).toLocaleDateString()}</span>
               </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="w-full mt-2"
+              >
+                {isDeleting ? "Deleting..." : "Delete Project"}
+              </Button>
             </div>
           </div>
         </div>
@@ -94,6 +126,10 @@ export default function ProjectsPage() {
       isMounted = false;
     };
   }, []);
+
+  const handleDeleteProject = (projectId: string) => {
+    setProjects((prevProjects) => prevProjects.filter((p) => p.id !== projectId));
+  };
 
   // Derive unique statuses from data
   const statuses = useMemo(() => {
@@ -204,7 +240,9 @@ export default function ProjectsPage() {
           {/* Projects Grid */}
           <div className="space-y-6">
             {filteredProjects.length > 0 ? (
-              filteredProjects.map((project) => <ProjectCard key={project.id} project={project} />)
+              filteredProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} onDelete={handleDeleteProject} />
+              ))
             ) : (
               <div className="text-center py-12">
                 <p className="text-gray-500">No projects found</p>
