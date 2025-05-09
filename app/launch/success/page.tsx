@@ -100,7 +100,7 @@ export default function SuccessPage() {
   function ActionButtons() {
     return (
       <div className="space-y-4">
-        <Link href="/deals">
+        <Link href="/projects">
           <Button className="w-full bg-[#0f172a] hover:bg-[#1e293b] flex items-center justify-center">
             View All Projects
             <ArrowRight className="ml-2 h-4 w-4" />
