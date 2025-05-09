@@ -1,34 +1,34 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
 
 type User = {
-  id: string
-  name: string
-  email: string
-  avatar?: string
-  walletBalance?: number
-}
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  walletBalance?: number;
+};
 
 type AuthContextType = {
-  user: User | null
-  isLoading: boolean
-  isAuthenticated: boolean
-  login: () => Promise<void>
-  signup: () => Promise<void>
-  logout: () => void
-}
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: () => Promise<void>;
+  signup: () => Promise<void>;
+  logout: () => Promise<void>;
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const { login: privyLogin, logout: privyLogout, authenticated, user: privyUser } = usePrivy()
-  const { wallets } = useWallets()
+  const { login: privyLogin, logout: privyLogout, authenticated, user: privyUser } = usePrivy();
+  const { wallets } = useWallets();
 
   useEffect(() => {
     if (authenticated && privyUser) {
@@ -38,57 +38,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: privyUser.email?.address || "",
         walletBalance: 0,
         avatar: "/placeholder-avatars/avatar-1.png",
-      }
-      setUser(userData)
-      setIsAuthenticated(true)
+      };
+      setUser(userData);
+      setIsAuthenticated(true);
     } else {
-      setUser(null)
-      setIsAuthenticated(false)
+      setUser(null);
+      setIsAuthenticated(false);
     }
-    setIsLoading(false)
-  }, [authenticated, privyUser])
+    setIsLoading(false);
+  }, [authenticated, privyUser]);
 
   const login = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await privyLogin()
+      await privyLogin();
     } catch (error) {
-      console.error("Login failed:", error)
-      throw error
+      console.error("Login failed:", error);
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const signup = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await privyLogin()
+      await privyLogin();
     } catch (error) {
-      console.error("Signup failed:", error)
-      throw error
+      console.error("Signup failed:", error);
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const logout = () => {
-    privyLogout()
-    setUser(null)
-    setIsAuthenticated(false)
-  }
+  const logout = async () => {
+    privyLogout();
+    setUser(null);
+    setIsAuthenticated(false);
+    return Promise.resolve();
+  };
 
   return (
     <AuthContext.Provider value={{ user, isLoading, isAuthenticated, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context
+  return context;
 }

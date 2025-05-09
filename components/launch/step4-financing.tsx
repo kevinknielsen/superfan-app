@@ -1,96 +1,115 @@
-"use client"
+"use client";
 
-import { useState, type ChangeEvent } from "react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { useLaunchProject } from "@/contexts/launch-project-context"
-import { UserAvatar } from "@/components/ui/user-avatar"
-import { Check } from "lucide-react"
-import supabase from '@/lib/supabaseClient'
+import { useState, type ChangeEvent, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { useLaunchProject } from "@/contexts/launch-project-context";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { Check } from "lucide-react";
+import supabase from "@/lib/supabaseClient";
+import { ProjectData, Curator } from "@/contexts/launch-project-context";
 
 interface Step4Props {
-  onNext: () => void
-  onPrevious: () => void
-  isFirstStep: boolean
-  isLastStep: boolean
+  onNext: () => void;
+  onPrevious: () => void;
+  isFirstStep: boolean;
+  isLastStep: boolean;
+}
+
+function validateFinancingForm(projectData: ProjectData) {
+  const errors: Record<string, string> = {};
+
+  if (!projectData.targetRaise) {
+    errors.targetRaise = "Target raise amount is required";
+  }
+
+  if (!projectData.minContribution) {
+    errors.minContribution = "Minimum contribution is required";
+  } else if (projectData.targetRaise && projectData.minContribution > projectData.targetRaise) {
+    errors.minContribution = "Minimum contribution cannot exceed target raise";
+  }
+
+  if (!projectData.maxContribution) {
+    errors.maxContribution = "Maximum contribution is required";
+  } else if (projectData.minContribution && projectData.maxContribution < projectData.minContribution) {
+    errors.maxContribution = "Maximum contribution cannot be less than minimum";
+  } else if (projectData.targetRaise && projectData.maxContribution > projectData.targetRaise) {
+    errors.maxContribution = "Maximum contribution cannot exceed target raise";
+  }
+
+  if (!projectData.startDate) {
+    errors.startDate = "Start date is required";
+  }
+
+  if (!projectData.endDate) {
+    errors.endDate = "End date is required";
+  } else if (projectData.startDate && new Date(projectData.endDate) <= new Date(projectData.startDate)) {
+    errors.endDate = "End date must be after start date";
+  }
+
+  return errors;
+}
+
+function CuratorCard({ curator, onClick }: { curator: Curator; onClick: (id: string) => void }) {
+  return (
+    <button
+      onClick={() => onClick(curator.id)}
+      className={`flex items-center p-4 rounded-lg border ${
+        curator.selected ? "border-green-500 bg-green-50" : "border-gray-200"
+      } cursor-pointer transition-all hover:border-green-500 hover:bg-green-50/50`}
+    >
+      <div className="flex items-center space-x-3 flex-1">
+        <UserAvatar src={curator.avatar || "/placeholder-user.jpg"} name={curator.name} size={40} />
+        <span className="font-medium">{curator.name}</span>
+      </div>
+      <div
+        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+          curator.selected ? "border-green-500 bg-green-500 text-white" : "border-gray-300"
+        }`}
+      >
+        {curator.selected && <Check className="w-4 h-4" />}
+      </div>
+    </button>
+  );
 }
 
 export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
-  const { projectData, updateField, toggleCurator } = useLaunchProject()
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const { projectData, updateField, toggleCurator } = useLaunchProject();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-
-    // Handle number inputs
-    if (["targetRaise", "minContribution", "maxContribution"].includes(name)) {
-      const numValue = value === "" ? null : Number.parseFloat(value)
-      updateField(name as keyof typeof projectData, numValue)
-    } else {
-      updateField(name as keyof typeof projectData, value)
-    }
+    const { name, value, type } = e.target;
+    const parsedValue = type === "number" ? (value === "" ? null : Number(value)) : value;
+    updateField(name as keyof typeof projectData, parsedValue);
 
     // Clear error when field is edited
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }))
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-  }
+  };
 
   const toggleFinancing = (checked: boolean) => {
-    updateField("enableFinancing", checked)
-  }
-
-  const validateForm = () => {
-    if (!projectData.enableFinancing) {
-      // Skip validation if financing is disabled
-      return true
-    }
-
-    const newErrors: Record<string, string> = {}
-
-    if (!projectData.targetRaise) {
-      newErrors.targetRaise = "Target raise amount is required"
-    }
-
-    if (!projectData.minContribution) {
-      newErrors.minContribution = "Minimum contribution is required"
-    } else if (projectData.targetRaise && projectData.minContribution > projectData.targetRaise) {
-      newErrors.minContribution = "Minimum contribution cannot exceed target raise"
-    }
-
-    if (!projectData.maxContribution) {
-      newErrors.maxContribution = "Maximum contribution is required"
-    } else if (projectData.minContribution && projectData.maxContribution < projectData.minContribution) {
-      newErrors.maxContribution = "Maximum contribution cannot be less than minimum"
-    } else if (projectData.targetRaise && projectData.maxContribution > projectData.targetRaise) {
-      newErrors.maxContribution = "Maximum contribution cannot exceed target raise"
-    }
-
-    if (!projectData.startDate) {
-      newErrors.startDate = "Start date is required"
-    }
-
-    if (!projectData.endDate) {
-      newErrors.endDate = "End date is required"
-    } else if (projectData.startDate && new Date(projectData.endDate) <= new Date(projectData.startDate)) {
-      newErrors.endDate = "End date must be after start date"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    updateField("enableFinancing", checked);
+  };
 
   const handleNext = async () => {
     if (!projectData.id) {
-      setErrors((prev) => ({ ...prev, general: 'Project ID missing. Please complete Project Info step.' }))
-      return
+      setErrors((prev) => ({ ...prev, general: "Project ID missing. Please complete Project Info step." }));
+      return;
     }
-    if (!validateForm()) return
 
+    const validationErrors = validateFinancingForm(projectData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setIsLoading(true);
     // Insert financing details into Supabase
-    const { error } = await supabase.from('financing').insert({
+    const { error } = await supabase.from("financing").insert({
       project_id: projectData.id,
       enabled: projectData.enableFinancing,
       target_raise: projectData.targetRaise,
@@ -98,19 +117,20 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
       max_contribution: projectData.maxContribution,
       start_date: projectData.startDate,
       end_date: projectData.endDate,
-    })
+    });
+    setIsLoading(false);
+
     if (error) {
-      setErrors((prev) => ({ ...prev, general: 'Failed to save financing: ' + error.message }))
-      return
+      setErrors((prev) => ({ ...prev, general: "Failed to save financing: " + error.message }));
+      return;
     }
-    onNext()
-  }
+    onNext();
+  };
 
-  const handleCuratorClick = (curatorId: string) => {
-    toggleCurator(curatorId)
-  }
-
-  const selectedCuratorsCount = projectData.selectedCurators.filter((curator) => curator.selected).length
+  const selectedCuratorsCount = useMemo(
+    () => projectData.selectedCurators.filter((curator) => curator.selected).length,
+    [projectData.selectedCurators]
+  );
 
   return (
     <div className="space-y-6">
@@ -234,25 +254,7 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {projectData.selectedCurators.map((curator) => (
-                <button
-                  key={curator.id}
-                  onClick={() => handleCuratorClick(curator.id)}
-                  className={`flex items-center p-4 rounded-lg border ${
-                    curator.selected ? "border-green-500 bg-green-50" : "border-gray-200"
-                  } cursor-pointer transition-all hover:border-green-500 hover:bg-green-50/50`}
-                >
-                  <div className="flex items-center space-x-3 flex-1">
-                    <UserAvatar src={curator.avatar} name={curator.name} size={40} />
-                    <span className="font-medium">{curator.name}</span>
-                  </div>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    curator.selected 
-                      ? "border-green-500 bg-green-500 text-white" 
-                      : "border-gray-300"
-                  }`}>
-                    {curator.selected && <Check className="w-4 h-4" />}
-                  </div>
-                </button>
+                <CuratorCard key={curator.id} curator={curator} onClick={toggleCurator} />
               ))}
             </div>
 
@@ -274,13 +276,13 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
       )}
 
       <div className="pt-6 flex justify-between">
-        <Button variant="ghost" onClick={onPrevious}>
+        <Button variant="ghost" onClick={onPrevious} disabled={isLoading}>
           Back
         </Button>
-        <Button onClick={handleNext} className="bg-[#0f172a] hover:bg-[#1e293b]">
-          Continue to Review
+        <Button onClick={handleNext} className="bg-[#0f172a] hover:bg-[#1e293b]" disabled={isLoading}>
+          {isLoading ? "Saving..." : "Continue to Review"}
         </Button>
       </div>
     </div>
-  )
+  );
 }

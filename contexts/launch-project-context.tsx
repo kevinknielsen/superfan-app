@@ -1,76 +1,80 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useReducer, type ReactNode, useEffect } from "react"
+import { createContext, useContext, useReducer, type ReactNode, useEffect } from "react";
+import { debounce } from "lodash";
 
 // Define milestone type
 export interface Milestone {
-  id: string
-  title: string
-  description: string
-  dueDate: string
-  requiresApproval: boolean
+  id: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  requiresApproval: boolean;
 }
 
 // Define royalty split type
 export interface RoyaltySplit {
-  id: string
-  recipient: string
-  percentage: number
+  id: string;
+  recipient: string;
+  percentage: number;
 }
 
 // Define curator type
 export interface Curator {
-  id: string
-  name: string
-  avatar: string
-  selected: boolean
+  id: string;
+  name: string;
+  avatar: string;
+  selected: boolean;
 }
 
 // Define collaborator type
 export interface Collaborator {
-  id: string
-  name: string
-  role: string
-  percentage: number
-  email: string
+  id: string;
+  name: string;
+  role: string;
+  percentage: number;
+  email: string;
 }
 
 // Update the ProjectData interface to include financing options
 export interface ProjectData {
   // Step 1: Project Info
-  id: string | null
-  title: string
-  artistName: string
-  description: string
-  artwork: File | null
-  artworkPreview: string | null
-  trackDemo: File | null
-  trackDemoPreview: string | null
-  voiceNote: File | null
-  voiceNotePreview: string | null
-  additionalFiles: File[]
+  id: string | null;
+  title: string;
+  artistName: string;
+  description: string;
+  artwork: File | null;
+  artworkPreview: string | null;
+  trackDemo: File | null;
+  trackDemoPreview: string | null;
+  voiceNote: File | null;
+  voiceNotePreview: string | null;
+  additionalFiles: File[];
   additionalFilesInfo: {
-    id: string
-    name: string
-    size: number
-    type: string
-    preview?: string
-  }[]
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    preview?: string;
+  }[];
 
   // Step 2: Royalty Splits
-  royaltySplits: RoyaltySplit[]
+  royaltySplits: RoyaltySplit[];
 
   // Step 3: Milestones
-  milestones: Milestone[]
+  milestones: Milestone[];
 
   // Step 4: Financing (formerly Project Terms)
-  enableFinancing: boolean
-  targetRaise: number | null
-  minContribution: number | null
-  maxContribution: number | null
-  startDate: string
-  endDate: string
-  selectedCurators: Curator[]
+  enableFinancing: boolean;
+  targetRaise: number | null;
+  minContribution: number | null;
+  maxContribution: number | null;
+  startDate: string;
+  endDate: string;
+  selectedCurators: Curator[];
+
+  // Collaborators
+  collaborators: Collaborator[];
 }
 
 // Define action types
@@ -84,6 +88,9 @@ type Action =
   | { type: "REMOVE_ROYALTY_SPLIT"; payload: { id: string } }
   | { type: "TOGGLE_CURATOR"; payload: { id: string } }
   | { type: "RESET_FORM" }
+  | { type: "ADD_COLLABORATOR"; payload: Collaborator }
+  | { type: "UPDATE_COLLABORATOR"; payload: { index: number; collaborator: Collaborator } }
+  | { type: "REMOVE_COLLABORATOR"; payload: { index: number } };
 
 // Sample curators data
 const availableCurators: Curator[] = [
@@ -92,24 +99,40 @@ const availableCurators: Curator[] = [
   { id: "curator-3", name: "Harmony Ventures", avatar: "/placeholder-avatars/avatar-3.png", selected: false },
   { id: "curator-4", name: "Rhythm Capital", avatar: "/placeholder-avatars/avatar-4.png", selected: false },
   { id: "curator-5", name: "Melody Investments", avatar: "/placeholder-avatars/avatar-5.png", selected: false },
-]
+];
 
 // Initial state
-const LOCAL_STORAGE_KEY = 'superfan-launch-project'
+const LOCAL_STORAGE_KEY = "superfan-launch-project";
+
+function generateUniqueId() {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substr(2, 9);
+}
+
+function logError(error: unknown) {
+  console.error("Error in getInitialState:", error);
+}
+
+const debouncedPersistState = debounce((state: ProjectData) => {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(getSerializableState(state)));
+  }
+}, 300);
 
 const getInitialState = (): ProjectData => {
-  if (typeof window !== 'undefined') {
-    const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY)
+  if (typeof window !== "undefined") {
+    const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY);
     if (stored) {
       try {
-        return JSON.parse(stored)
+        return JSON.parse(stored);
       } catch (e) {
-        // Ignore parse errors and fall back to default
+        logError(e);
       }
     }
   }
-  return initialState
-}
+  return initialState;
+};
 
 const initialState: ProjectData = {
   // Step 1: Project Info
@@ -125,7 +148,6 @@ const initialState: ProjectData = {
   voiceNotePreview: null,
   additionalFiles: [],
   additionalFilesInfo: [],
-
   // Step 2: Royalty Splits
   royaltySplits: [
     {
@@ -146,23 +168,26 @@ const initialState: ProjectData = {
   startDate: "",
   endDate: "",
   selectedCurators: availableCurators,
-}
+
+  // Collaborators
+  collaborators: [],
+};
 
 // Launch context
 interface LaunchProjectContextType {
-  projectData: ProjectData
-  updateField: (field: keyof ProjectData, value: any) => void
-  addMilestone: () => void
-  updateMilestone: (id: string, field: keyof Milestone, value: any) => void
-  removeMilestone: (id: string) => void
-  addCollaborator: (collaborator: Collaborator) => void
-  updateCollaborator: (index: number, collaborator: Collaborator) => void
-  removeCollaborator: (index: number) => void
-  toggleCurator: (curatorId: string) => void
-  resetForm: () => void
+  projectData: ProjectData;
+  updateField: (field: keyof ProjectData, value: any) => void;
+  addMilestone: () => void;
+  updateMilestone: (id: string, field: keyof Milestone, value: any) => void;
+  removeMilestone: (id: string) => void;
+  addCollaborator: (collaborator: Collaborator) => void;
+  updateCollaborator: (index: number, collaborator: Collaborator) => void;
+  removeCollaborator: (index: number) => void;
+  toggleCurator: (curatorId: string) => void;
+  resetForm: () => void;
 }
 
-const LaunchProjectContext = createContext<LaunchProjectContextType | undefined>(undefined)
+const LaunchProjectContext = createContext<LaunchProjectContextType | undefined>(undefined);
 
 // Reducer function
 function projectReducer(state: ProjectData, action: Action): ProjectData {
@@ -171,7 +196,7 @@ function projectReducer(state: ProjectData, action: Action): ProjectData {
       return {
         ...state,
         [action.payload.stepKey]: action.payload.value,
-      }
+      };
     case "UPDATE_MILESTONE":
       return {
         ...state,
@@ -180,105 +205,114 @@ function projectReducer(state: ProjectData, action: Action): ProjectData {
             ? { ...milestone, [action.payload.field]: action.payload.value }
             : milestone
         ),
-      }
+      };
     case "ADD_MILESTONE":
       return {
         ...state,
         milestones: [...state.milestones, action.payload],
-      }
+      };
     case "REMOVE_MILESTONE":
       return {
         ...state,
-        milestones: state.milestones.filter(
-          (milestone) => milestone && milestone.id !== action.payload.id
-        ),
-      }
+        milestones: state.milestones.filter((milestone) => milestone && milestone.id !== action.payload.id),
+      };
     case "UPDATE_ROYALTY_SPLIT":
       return {
         ...state,
         royaltySplits: state.royaltySplits.map((split) =>
-          split.id === action.payload.id ? { ...split, [action.payload.field]: action.payload.value } : split,
+          split.id === action.payload.id ? { ...split, [action.payload.field]: action.payload.value } : split
         ),
-      }
+      };
     case "ADD_ROYALTY_SPLIT":
       return {
         ...state,
         royaltySplits: [...state.royaltySplits, action.payload],
-      }
+      };
     case "REMOVE_ROYALTY_SPLIT":
       return {
         ...state,
         royaltySplits: state.royaltySplits.filter((split) => split.id !== action.payload.id),
-      }
+      };
     case "TOGGLE_CURATOR":
       return {
         ...state,
         selectedCurators: state.selectedCurators.map((curator) =>
-          curator.id === action.payload.id
-            ? { ...curator, selected: !curator.selected }
-            : curator
+          curator.id === action.payload.id ? { ...curator, selected: !curator.selected } : curator
         ),
-      }
+      };
     case "RESET_FORM":
-      return initialState
+      return initialState;
+    case "ADD_COLLABORATOR":
+      return {
+        ...state,
+        collaborators: [...state.collaborators, action.payload],
+      };
+    case "UPDATE_COLLABORATOR":
+      const { index, collaborator } = action.payload;
+      return {
+        ...state,
+        collaborators: state.collaborators.map((c, i) => (i === index ? collaborator : c)),
+      };
+    case "REMOVE_COLLABORATOR":
+      return {
+        ...state,
+        collaborators: state.collaborators.filter((_, i) => i !== action.payload.index),
+      };
     default:
-      return state
+      return state;
   }
 }
 
 // Provider component
 export function LaunchProjectProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(projectReducer, getInitialState())
+  const [state, dispatch] = useReducer(projectReducer, getInitialState());
 
-  // Persist state to localStorage on every change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(getSerializableState(state)))
-    }
-  }, [state])
+    debouncedPersistState(state);
+  }, [state]);
 
-  const updateField = (field: keyof ProjectData, value: any) => {
-    dispatch({ type: "UPDATE_FIELD", payload: { stepKey: field, value } })
-  }
+  const updateField = (field: keyof ProjectData, value: string | number | boolean | null) => {
+    dispatch({ type: "UPDATE_FIELD", payload: { stepKey: field, value } });
+  };
 
   const addMilestone = () => {
     const newMilestone: Milestone = {
-      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
       title: "",
       description: "",
       dueDate: "",
       requiresApproval: false,
     };
     dispatch({ type: "ADD_MILESTONE", payload: newMilestone });
-  }
+  };
 
-  const updateMilestone = (id: string, field: keyof Milestone, value: any) => {
-    dispatch({ type: "UPDATE_MILESTONE", payload: { id, field, value } })
-  }
+  const updateMilestone = (id: string, field: keyof Milestone, value: string | boolean) => {
+    dispatch({ type: "UPDATE_MILESTONE", payload: { id, field, value } });
+  };
 
   const removeMilestone = (id: string) => {
-    dispatch({ type: "REMOVE_MILESTONE", payload: { id } })
-  }
-
-  const addCollaborator = (collaborator: Collaborator) => {
-    // Implementation needed
-  }
-
-  const updateCollaborator = (index: number, collaborator: Collaborator) => {
-    // Implementation needed
-  }
-
-  const removeCollaborator = (index: number) => {
-    // Implementation needed
-  }
+    dispatch({ type: "REMOVE_MILESTONE", payload: { id } });
+  };
 
   const toggleCurator = (curatorId: string) => {
-    dispatch({ type: "TOGGLE_CURATOR", payload: { id: curatorId } })
-  }
+    dispatch({ type: "TOGGLE_CURATOR", payload: { id: curatorId } });
+  };
 
   const resetForm = () => {
-    dispatch({ type: "RESET_FORM" })
-  }
+    dispatch({ type: "RESET_FORM" });
+  };
+
+  const addCollaborator = (collaborator: Collaborator) => {
+    dispatch({ type: "ADD_COLLABORATOR", payload: collaborator });
+  };
+
+  const updateCollaborator = (index: number, collaborator: Collaborator) => {
+    dispatch({ type: "UPDATE_COLLABORATOR", payload: { index, collaborator } });
+  };
+
+  const removeCollaborator = (index: number) => {
+    dispatch({ type: "REMOVE_COLLABORATOR", payload: { index } });
+  };
 
   return (
     <LaunchProjectContext.Provider
@@ -288,25 +322,25 @@ export function LaunchProjectProvider({ children }: { children: ReactNode }) {
         addMilestone,
         updateMilestone,
         removeMilestone,
+        toggleCurator,
+        resetForm,
         addCollaborator,
         updateCollaborator,
         removeCollaborator,
-        toggleCurator,
-        resetForm,
       }}
     >
       {children}
     </LaunchProjectContext.Provider>
-  )
+  );
 }
 
 // Custom hook for using the context
 export function useLaunchProject() {
-  const context = useContext(LaunchProjectContext)
+  const context = useContext(LaunchProjectContext);
   if (context === undefined) {
-    throw new Error("useLaunchProject must be used within a LaunchProjectProvider")
+    throw new Error("useLaunchProject must be used within a LaunchProjectProvider");
   }
-  return context
+  return context;
 }
 
 function getSerializableState(state: ProjectData): ProjectData {
@@ -321,5 +355,5 @@ function getSerializableState(state: ProjectData): ProjectData {
     voiceNotePreview: null,
     additionalFiles: [],
     additionalFilesInfo: [],
-  }
+  };
 }

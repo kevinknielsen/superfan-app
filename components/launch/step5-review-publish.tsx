@@ -1,45 +1,68 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { useLaunchProject } from "@/contexts/launch-project-context"
-import { formatDate } from "@/lib/utils"
-import { UserAvatar } from "@/components/ui/user-avatar"
-import supabase from '@/lib/supabaseClient'
-import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button";
+import { useLaunchProject } from "@/contexts/launch-project-context";
+import { formatDate } from "@/lib/utils";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import supabase from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Step5Props {
-  onNext: () => void
-  onPrevious: () => void
-  isFirstStep: boolean
-  isLastStep: boolean
+  onNext: () => void;
+  onPrevious: () => void;
+  isFirstStep: boolean;
+  isLastStep: boolean;
+}
+
+function CuratorBadge({ curator }: { curator: { id: string; name: string; avatar: string | null } }) {
+  return (
+    <div className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1">
+      <UserAvatar src={curator.avatar || "/placeholder-user.jpg"} name={curator.name} size={20} alt={curator.name} />
+      <span className="text-sm">{curator.name}</span>
+    </div>
+  );
 }
 
 export default function Step5ReviewPublish({ onNext }: Step5Props) {
-  const { projectData } = useLaunchProject()
+  const { projectData } = useLaunchProject();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Calculate total percentage for royalty splits
-  const totalPercentage = projectData.royaltySplits.reduce((sum, split) => sum + split.percentage, 0)
+  const totalPercentage = useMemo(
+    () => projectData.royaltySplits.reduce((sum, split) => sum + split.percentage, 0),
+    [projectData.royaltySplits]
+  );
 
-  // Count selected curators
-  const selectedCurators = projectData.selectedCurators.filter((curator) => curator.selected)
+  const selectedCurators = useMemo(
+    () => projectData.selectedCurators.filter((curator) => curator.selected),
+    [projectData.selectedCurators]
+  );
 
   const handlePublish = async () => {
     if (!projectData.id) return onNext();
-    const selectedCurators = projectData.selectedCurators.filter((curator) => curator.selected);
-    if (selectedCurators.length > 0) {
-      const pitches = selectedCurators.map((curator) => ({
-        project_id: projectData.id,
-        curator_id: curator.id,
-      }));
-      const { error } = await supabase.from('curator_pitches').insert(pitches);
-      if (error) {
-        alert('Failed to save curator pitches: ' + error.message);
-        return;
+
+    setIsLoading(true);
+    try {
+      if (selectedCurators.length > 0) {
+        const pitches = selectedCurators.map((curator) => ({
+          project_id: projectData.id,
+          curator_id: curator.id,
+        }));
+        const { error } = await supabase.from("curator_pitches").insert(pitches);
+        if (error) throw new Error("Failed to save curator pitches: " + error.message);
       }
+      router.push(`/launch/success?projectId=${projectData.id}`);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+      });
+    } finally {
+      setIsLoading(false);
     }
-    // Redirect to success page with projectId
-    router.push(`/launch/success?projectId=${projectData.id}`);
   };
 
   return (
@@ -194,10 +217,7 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
                 {selectedCurators.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {selectedCurators.map((curator) => (
-                      <div key={curator.id} className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1">
-                        <UserAvatar src={curator.avatar} name={curator.name} size={20} />
-                        <span className="text-sm">{curator.name}</span>
-                      </div>
+                      <CuratorBadge key={curator.id} curator={curator} />
                     ))}
                   </div>
                 ) : (
@@ -214,13 +234,13 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
       </div>
 
       <div className="pt-4">
-        <Button onClick={handlePublish} className="w-full bg-[#0f172a] hover:bg-[#1e293b]">
-          Publish Project
+        <Button onClick={handlePublish} className="w-full bg-[#0f172a] hover:bg-[#1e293b]" disabled={isLoading}>
+          {isLoading ? "Publishing..." : "Publish Project"}
         </Button>
         <p className="text-center text-sm text-gray-500 mt-2">
           By publishing, you agree to our Terms of Service and Privacy Policy
         </p>
       </div>
     </div>
-  )
+  );
 }

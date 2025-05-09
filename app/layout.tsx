@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import Header from "@/components/layout/header"
-import Footer from "@/components/layout/footer"
-import { AuthProvider } from "@/contexts/auth-context"
-import { PrivyProvider } from "@privy-io/react-auth"
+import type React from "react";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
+import { AuthProvider } from "@/contexts/auth-context";
+import { PrivyProvider } from "@privy-io/react-auth";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <PrivyProvider
           appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
           config={{
@@ -58,5 +58,5 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </PrivyProvider>
       </body>
     </html>
-  )
+  );
 }
