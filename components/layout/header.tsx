@@ -43,27 +43,17 @@ function ProfileDropdown({ user, logout }: { user: any; logout: () => Promise<vo
       </button>
       {isProfileDropdownOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-          <Link href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-            Portfolio
-          </Link>
-          <Link href="/unlocks" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-            Unlocks
-          </Link>
+          <span className="block px-4 py-2 text-sm text-gray-400 cursor-not-allowed opacity-50">Portfolio</span>
+          <span className="block px-4 py-2 text-sm text-gray-400 cursor-not-allowed opacity-50">Unlocks</span>
           <Link href="/settings/wallet" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
             Wallet
           </Link>
-          <Link href="/settings/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-            Profile
-          </Link>
-          <Link href="/settings/notifications" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-            Notifications
-          </Link>
-          <Link href="/settings/documents" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-            Documents
-          </Link>
+          <span className="block px-4 py-2 text-sm text-gray-400 cursor-not-allowed opacity-50">Profile</span>
+          <span className="block px-4 py-2 text-sm text-gray-400 cursor-not-allowed opacity-50">Notifications</span>
+          <span className="block px-4 py-2 text-sm text-gray-400 cursor-not-allowed opacity-50">Documents</span>
           <div className="border-t border-gray-100 my-1"></div>
           <a
-            href="https://twitter.com/superfanone"
+            href="https://x.com/kevinknielsen"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

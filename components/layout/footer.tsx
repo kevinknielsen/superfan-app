@@ -6,9 +6,9 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center space-x-4 mb-4 md:mb-0">
-            <span className="font-medium">Superfan.xyz</span>
+            <span className="font-medium">Superfan One</span>
             <span className="hidden sm:inline text-gray-500">|</span>
-            <span className="hidden sm:inline text-gray-500">Early-stage investing in startups</span>
+            <span className="hidden sm:inline text-gray-500">The Onchain Music Launchpad</span>
           </div>
           <div className="flex flex-wrap justify-center md:justify-end items-center gap-4 md:space-x-6">
             <a
