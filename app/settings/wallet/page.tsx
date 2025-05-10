@@ -12,6 +12,7 @@ import { formatUnits } from "viem"
 import { useToast } from "@/components/ui/use-toast"
 import { ethers } from "ethers"
 import { base } from 'viem/chains'
+import { useWalletBalance } from "@/hooks/use-wallet-balance"
 
 // USDC contract ABI - only including the functions we need
 const USDC_ABI = [
@@ -25,61 +26,11 @@ const USDC_CONTRACT_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 export default function WalletPage() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
-  const [balance, setBalance] = useState<string>("0")
+  const { balance, loading } = useWalletBalance()
   const { wallets } = useWallets()
   const { toast } = useToast()
   const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === "privy")
   const { fundWallet } = useFundWallet()
-
-  useEffect(() => {
-    const fetchBalance = async () => {
-      if (!embeddedWallet?.address) {
-        console.log('No embedded wallet found')
-        return
-      }
-
-      try {
-        console.log('Fetching balance for wallet:', embeddedWallet.address)
-        
-        // Use Infura Base Mainnet RPC
-        const BASE_RPC_URL = `https://base-mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_PROJECT_ID}`
-        const provider = new ethers.JsonRpcProvider(BASE_RPC_URL)
-        
-        // Create USDC contract instance
-        const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, USDC_ABI, provider)
-        
-        // Get USDC balance and decimals
-        const [rawBalance, tokenDecimals] = await Promise.all([
-          usdcContract.balanceOf(embeddedWallet.address),
-          usdcContract.decimals()
-        ])
-
-        console.log('Raw balance:', rawBalance.toString())
-        console.log('Token decimals:', tokenDecimals)
-
-        // Format the balance manually since we're having issues with formatUnits
-        const balanceInWei = rawBalance.toString()
-        const decimals = Number(tokenDecimals)
-        const formattedBalance = (Number(balanceInWei) / Math.pow(10, decimals)).toFixed(decimals)
-        
-        console.log('Formatted balance:', formattedBalance)
-        setBalance(formattedBalance)
-      } catch (error) {
-        console.error('Error in fetchBalance:', error)
-        if (error instanceof Error) {
-          console.error('Error details:', error.message)
-          console.error('Error stack:', error.stack)
-        }
-        toast({
-          title: "Error",
-          description: "Failed to fetch wallet balance",
-          variant: "destructive",
-        })
-      }
-    }
-
-    fetchBalance()
-  }, [embeddedWallet?.address, toast])
 
   const handleWithdraw = async () => {
     if (!embeddedWallet) {

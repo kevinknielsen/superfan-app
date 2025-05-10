@@ -60,17 +60,19 @@ export interface ProjectData {
 
   // Step 2: Royalty Splits
   royaltySplits: RoyaltySplit[];
+  enableEarlySupporters: boolean;
+  earlySupportersPercentage: number;
 
   // Step 3: Milestones
   milestones: Milestone[];
 
-  // Step 4: Financing (formerly Project Terms)
+  // Step 4: Financing
   enableFinancing: boolean;
   targetRaise: number | null;
   minContribution: number | null;
   maxContribution: number | null;
-  startDate: string;
-  endDate: string;
+  financingStartDate: Date | null;
+  financingEndDate: Date | null;
   selectedCurators: Curator[];
 
   // Collaborators
@@ -156,17 +158,19 @@ const initialState: ProjectData = {
       percentage: 100,
     },
   ],
+  enableEarlySupporters: false,
+  earlySupportersPercentage: 5,
 
   // Step 3: Milestones
   milestones: [],
 
-  // Step 4: Financing (formerly Project Terms)
+  // Step 4: Financing
   enableFinancing: true,
   targetRaise: null,
   minContribution: null,
   maxContribution: null,
-  startDate: "",
-  endDate: "",
+  financingStartDate: null,
+  financingEndDate: null,
   selectedCurators: availableCurators,
 
   // Collaborators

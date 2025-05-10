@@ -10,6 +10,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useWalletBalance } from "@/hooks/use-wallet-balance";
 
 function ProfileDropdown({ user, logout }: { user: any; logout: () => Promise<void> }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -150,6 +151,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { balance, loading } = useWalletBalance();
   const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -192,7 +194,7 @@ export default function Header() {
   return (
     <header className="border-b border-gray-200 py-4 bg-[#0f172a] text-white sticky top-0 z-50">
       <div className="container mx-auto px-4 flex justify-between items-center">
-        <div className="flex items-center space-x-8">
+        <div className="flex items-center">
           <Link href="/browse" className="flex items-center">
             <Image
               src="/superfan-logo-white.png"
@@ -201,10 +203,9 @@ export default function Header() {
               height={40}
               className="h-10 w-auto object-contain object-left"
             />
-            <span className="text-xs text-gray-400 bg-gray-700 px-1 rounded ml-2">BETA</span>
           </Link>
 
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-6 ml-8">
             <Link href="/launch" className="text-gray-300 hover:text-white">
               Launch
             </Link>
@@ -221,7 +222,7 @@ export default function Header() {
         <div className="hidden md:flex items-center gap-6">
           <div className="flex items-center">
             <Link href="/settings/wallet" className="mr-4 text-sm hover:text-gray-300">
-              Wallet • ${user?.walletBalance || 0} USDC
+              Wallet • ${Number(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
             </Link>
             {/* Replace the avatar code with the UserAvatar component */}
             <ProfileDropdown user={user} logout={logout} />
@@ -231,7 +232,7 @@ export default function Header() {
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center gap-2">
           <Link href="/settings/wallet" className="mr-4 text-sm">
-            ${user?.walletBalance || 0} USDC
+            ${Number(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
           </Link>
           <button
             type="button"
