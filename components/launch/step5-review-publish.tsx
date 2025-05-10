@@ -198,23 +198,15 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
                     {projectData.targetRaise ? `${projectData.targetRaise} USDC` : "Not specified"}
                   </p>
                 </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Contribution Range</h4>
-                  <p>
-                    {projectData.minContribution && projectData.maxContribution
-                      ? `${projectData.minContribution} - ${projectData.maxContribution} USDC`
-                      : "Not specified"}
-                  </p>
-                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">Start Date</h4>
-                  <p>{projectData.startDate ? formatDate(projectData.startDate) : "Not specified"}</p>
+                  <p>{projectData.financingStartDate ? formatDate(projectData.financingStartDate.toISOString()) : "Not specified"}</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">End Date</h4>
-                  <p>{projectData.endDate ? formatDate(projectData.endDate) : "Not specified"}</p>
+                  <p>{projectData.financingEndDate ? formatDate(projectData.financingEndDate.toISOString()) : "Not specified"}</p>
                 </div>
               </div>
 

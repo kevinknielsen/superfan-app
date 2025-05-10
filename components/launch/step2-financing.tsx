@@ -28,20 +28,6 @@ function validateFinancingForm(projectData: ProjectData) {
     errors.targetRaise = "Target raise amount is required";
   }
 
-  if (!projectData.minContribution) {
-    errors.minContribution = "Minimum contribution is required";
-  } else if (projectData.targetRaise && projectData.minContribution > projectData.targetRaise) {
-    errors.minContribution = "Minimum contribution cannot exceed target raise";
-  }
-
-  if (!projectData.maxContribution) {
-    errors.maxContribution = "Maximum contribution is required";
-  } else if (projectData.minContribution && projectData.maxContribution < projectData.minContribution) {
-    errors.maxContribution = "Maximum contribution cannot be less than minimum";
-  } else if (projectData.targetRaise && projectData.maxContribution > projectData.targetRaise) {
-    errors.maxContribution = "Maximum contribution cannot exceed target raise";
-  }
-
   if (!projectData.financingStartDate) {
     errors.financingStartDate = "Start date is required";
   }
@@ -78,7 +64,7 @@ function CuratorCard({ curator, onClick }: { curator: Curator; onClick: (id: str
   );
 }
 
-export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
+export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
   const { projectData, updateField, toggleCurator } = useLaunchProject();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -129,8 +115,6 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
       project_id: projectData.id,
       enabled: projectData.enableFinancing,
       target_raise: projectData.targetRaise,
-      min_contribution: projectData.minContribution,
-      max_contribution: projectData.maxContribution,
       start_date: projectData.financingStartDate,
       end_date: projectData.financingEndDate,
     });
@@ -155,15 +139,6 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
     if (projectData.enableFinancing) {
       if (!projectData.targetRaise || projectData.targetRaise <= 0) {
         newErrors.targetRaise = "Please enter a valid target raise amount";
-      }
-      if (!projectData.minContribution || projectData.minContribution <= 0) {
-        newErrors.minContribution = "Please enter a valid minimum contribution";
-      }
-      if (!projectData.maxContribution || projectData.maxContribution <= 0) {
-        newErrors.maxContribution = "Please enter a valid maximum contribution";
-      }
-      if (projectData.minContribution && projectData.maxContribution && projectData.minContribution > projectData.maxContribution) {
-        newErrors.maxContribution = "Maximum contribution must be greater than minimum contribution";
       }
       if (!projectData.financingStartDate) {
         newErrors.financingStartDate = "Please select a start date";
@@ -192,7 +167,7 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
       <div>
         <h2 className="text-xl font-semibold mb-4">Financing</h2>
         <p className="text-gray-600 mb-6">
-          Set up financing options for your project or keep it private until a curator discovers it.
+          Do you want to raise funds for your project?
         </p>
       </div>
 
@@ -218,8 +193,6 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
               // Reset financing fields when disabled
               if (!checked) {
                 updateField("targetRaise", null);
-                updateField("minContribution", null);
-                updateField("maxContribution", null);
                 updateField("financingStartDate", null);
                 updateField("financingEndDate", null);
               }
@@ -265,44 +238,6 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
               />
               {errors.targetRaise && <p className="text-red-500 text-sm mt-1">{errors.targetRaise}</p>}
               <p className="text-gray-500 text-sm mt-1">Total amount you aim to raise for this project</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="minContribution" className={errors.minContribution ? "text-red-500" : ""}>
-                  Min Contribution (USDC)
-                </Label>
-                <Input
-                  id="minContribution"
-                  name="minContribution"
-                  type="number"
-                  min="0"
-                  step="10"
-                  placeholder="e.g., 100"
-                  value={projectData.minContribution === null ? "" : projectData.minContribution}
-                  onChange={handleChange}
-                  className={errors.minContribution ? "border-red-500" : ""}
-                />
-                {errors.minContribution && <p className="text-red-500 text-sm mt-1">{errors.minContribution}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="maxContribution" className={errors.maxContribution ? "text-red-500" : ""}>
-                  Max Contribution (USDC)
-                </Label>
-                <Input
-                  id="maxContribution"
-                  name="maxContribution"
-                  type="number"
-                  min="0"
-                  step="100"
-                  placeholder="e.g., 5000"
-                  value={projectData.maxContribution === null ? "" : projectData.maxContribution}
-                  onChange={handleChange}
-                  className={errors.maxContribution ? "border-red-500" : ""}
-                />
-                {errors.maxContribution && <p className="text-red-500 text-sm mt-1">{errors.maxContribution}</p>}
-              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -372,7 +307,7 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
           Back
         </Button>
         <Button onClick={handleNextCallback} className="bg-[#0f172a] hover:bg-[#1e293b]" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Continue to Review"}
+          {isLoading ? "Saving..." : "Continue to Royalty Splits"}
         </Button>
       </div>
     </div>
