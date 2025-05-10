@@ -202,11 +202,11 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">Start Date</h4>
-                  <p>{projectData.financingStartDate ? formatDate(projectData.financingStartDate.toISOString()) : "Not specified"}</p>
+                  <p>{projectData.financingStartDate ? formatDate(typeof projectData.financingStartDate === 'string' ? projectData.financingStartDate : projectData.financingStartDate.toISOString()) : "Not specified"}</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">End Date</h4>
-                  <p>{projectData.financingEndDate ? formatDate(projectData.financingEndDate.toISOString()) : "Not specified"}</p>
+                  <p>{projectData.financingEndDate ? formatDate(typeof projectData.financingEndDate === 'string' ? projectData.financingEndDate : projectData.financingEndDate.toISOString()) : "Not specified"}</p>
                 </div>
               </div>
 
