@@ -168,7 +168,8 @@ const RangeSlider = memo(function RangeSlider({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsChanging(true);
-    onChange(Number(e.target.value));
+    const newValue = Number(e.target.value);
+    onChange(newValue);
     setTimeout(() => setIsChanging(false), 300);
   };
 
@@ -194,7 +195,7 @@ const RangeSlider = memo(function RangeSlider({
         type="range"
         min={min}
         max={max}
-        value={value}
+        value={value || 0}
         onChange={handleChange}
         className="slider-input"
         style={{ color }}
@@ -202,7 +203,7 @@ const RangeSlider = memo(function RangeSlider({
       />
       {showValue && (
         <motion.div className="slider-value" animate={{ scale: isChanging ? 1.1 : 1 }} transition={{ duration: 0.2 }}>
-          {value}%
+          {value || 0}%
         </motion.div>
       )}
     </div>
@@ -607,9 +608,9 @@ const FundingControls = memo(function FundingControls({
             <div className="curator-toggle">
               <div className="space-y-0.5">
                 <Label htmlFor="curator-shares" className="text-sm">
-                  Early Curator Shares
+                  Early Supporters
                 </Label>
-                <p className="text-xs text-gray-500">Reward early supporters with additional revenue share</p>
+                <p className="text-xs text-gray-500">Reward project backers with additional revenue share</p>
               </div>
               <div className="flex items-center gap-2">
                 <motion.div animate={{ scale: isIconPulsing ? [1, 1.2, 1] : 1 }} transition={{ duration: 0.5 }}>
@@ -689,7 +690,7 @@ const DealSummary = memo(function DealSummary({
 
           {enableCuratorShares && (
             <div className="flex justify-between items-center pb-2 border-b">
-              <span className="text-sm">Early Curator Share</span>
+              <span className="text-sm">Early Supporters</span>
               <span className="font-medium">{curatorPercentage}%</span>
             </div>
           )}
@@ -775,8 +776,6 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
 
   const [selectedCollaborator, setSelectedCollaborator] = useState<string>("artist");
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
-  const [enableCuratorShares, setEnableCuratorShares] = useState<boolean>(false);
-  const [curatorPercentage, setCuratorPercentage] = useState<number>(5);
   const platformFee = 2.5; // Fixed platform fee
   const [emojiPickerState, setEmojiPickerState] = useState<Record<string, boolean>>({});
 
@@ -903,13 +902,13 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
 
   // Handle curator shares toggle
   const handleCuratorSharesChange = useCallback((checked: boolean) => {
-    setEnableCuratorShares(checked);
-  }, []);
+    updateField("enableEarlySupporters", checked);
+  }, [updateField]);
 
   // Handle curator percentage change
   const handleCuratorPercentageChange = useCallback((value: number) => {
-    setCuratorPercentage(value);
-  }, []);
+    updateField("earlySupportersPercentage", value);
+  }, [updateField]);
 
   // Validate the form
   const validateForm = useCallback(() => {
@@ -1073,8 +1072,8 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
 
           {/* Funding controls */}
           <FundingControls
-            enableCuratorShares={enableCuratorShares}
-            curatorPercentage={curatorPercentage}
+            enableCuratorShares={projectData.enableEarlySupporters}
+            curatorPercentage={projectData.earlySupportersPercentage}
             platformFee={platformFee}
             onCuratorSharesChange={handleCuratorSharesChange}
             onCuratorPercentageChange={handleCuratorPercentageChange}
@@ -1084,8 +1083,8 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
           <DealSummary
             collaborators={collaborators}
             platformFee={platformFee}
-            curatorPercentage={curatorPercentage}
-            enableCuratorShares={enableCuratorShares}
+            curatorPercentage={projectData.earlySupportersPercentage}
+            enableCuratorShares={projectData.enableEarlySupporters}
           />
         </div>
       </div>
