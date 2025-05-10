@@ -8,10 +8,19 @@ import { DepositModal } from "@/components/ui/deposit-modal"
 import { SignMessage } from "@/components/ui/sign-message"
 import { WalletAddress } from "@/components/ui/wallet-address"
 import { useWallets, useFundWallet } from "@privy-io/react-auth"
-import { formatEther } from "viem"
+import { formatUnits } from "viem"
 import { useToast } from "@/components/ui/use-toast"
 import { ethers } from "ethers"
 import { base } from 'viem/chains'
+
+// USDC contract ABI - only including the functions we need
+const USDC_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+]
+
+// USDC contract address on Base mainnet
+const USDC_CONTRACT_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
 export default function WalletPage() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
@@ -24,31 +33,53 @@ export default function WalletPage() {
 
   useEffect(() => {
     const fetchBalance = async () => {
-      if (embeddedWallet) {
-        try {
-          console.log('embeddedWallet:', embeddedWallet)
-          console.log('embeddedWallet.address:', embeddedWallet.address)
-          // Use Infura Base Mainnet RPC
-          const BASE_RPC_URL = `https://base-mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_PROJECT_ID}`
-          const provider = new ethers.JsonRpcProvider(BASE_RPC_URL)
-          const balance = await provider.getBalance(embeddedWallet.address)
-          console.log('Fetched balance (wei):', balance.toString())
-          setBalance(formatEther(balance))
-        } catch (error) {
-          console.error("Error fetching balance:", error)
-          toast({
-            title: "Error",
-            description: "Failed to fetch wallet balance",
-            variant: "destructive",
-          })
+      if (!embeddedWallet?.address) {
+        console.log('No embedded wallet found')
+        return
+      }
+
+      try {
+        console.log('Fetching balance for wallet:', embeddedWallet.address)
+        
+        // Use Infura Base Mainnet RPC
+        const BASE_RPC_URL = `https://base-mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_PROJECT_ID}`
+        const provider = new ethers.JsonRpcProvider(BASE_RPC_URL)
+        
+        // Create USDC contract instance
+        const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, USDC_ABI, provider)
+        
+        // Get USDC balance and decimals
+        const [rawBalance, tokenDecimals] = await Promise.all([
+          usdcContract.balanceOf(embeddedWallet.address),
+          usdcContract.decimals()
+        ])
+
+        console.log('Raw balance:', rawBalance.toString())
+        console.log('Token decimals:', tokenDecimals)
+
+        // Format the balance manually since we're having issues with formatUnits
+        const balanceInWei = rawBalance.toString()
+        const decimals = Number(tokenDecimals)
+        const formattedBalance = (Number(balanceInWei) / Math.pow(10, decimals)).toFixed(decimals)
+        
+        console.log('Formatted balance:', formattedBalance)
+        setBalance(formattedBalance)
+      } catch (error) {
+        console.error('Error in fetchBalance:', error)
+        if (error instanceof Error) {
+          console.error('Error details:', error.message)
+          console.error('Error stack:', error.stack)
         }
-      } else {
-        console.log('embeddedWallet is not available')
+        toast({
+          title: "Error",
+          description: "Failed to fetch wallet balance",
+          variant: "destructive",
+        })
       }
     }
 
     fetchBalance()
-  }, [embeddedWallet, toast])
+  }, [embeddedWallet?.address, toast])
 
   const handleWithdraw = async () => {
     if (!embeddedWallet) {
@@ -96,7 +127,9 @@ export default function WalletPage() {
           <h2 className="text-xl font-semibold">Balance</h2>
           <NetworkSelector />
         </div>
-        <p className="text-3xl font-bold mb-4">{Number(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETH</p>
+        <div className="flex items-center gap-2 mb-4">
+          <p className="text-3xl font-bold">{Number(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC</p>
+        </div>
         <div className="flex gap-4">
           <Button onClick={() => setIsDepositModalOpen(true)}>
             Deposit
@@ -113,9 +146,21 @@ export default function WalletPage() {
       {/* Wallet Address Section */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Wallet Address</h2>
-        <p className="font-mono text-sm break-all">
-          {embeddedWallet?.address || "No wallet connected"}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="font-mono text-sm break-all">
+            {embeddedWallet?.address || "No wallet connected"}
+          </p>
+          {embeddedWallet?.address && (
+            <a 
+              href={`https://basescan.org/address/${embeddedWallet.address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline whitespace-nowrap"
+            >
+              View on Basescan
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Sign Message Section */}
