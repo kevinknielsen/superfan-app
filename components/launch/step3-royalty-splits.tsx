@@ -439,7 +439,7 @@ const SplitPieChart = memo(function SplitPieChart({
     ...(enableCuratorShares && curatorPercentage > 0
       ? [{
           id: 'early-supporters',
-          name: 'Early Supporters',
+          name: 'Curators',
           role: 'Curator',
           email: '',
           walletAddress: '',
@@ -548,7 +548,7 @@ const SplitPieChart = memo(function SplitPieChart({
             {(() => {
               const slice = allSlices[hoveredSlice];
               const percent = slice?.percentage || 0;
-              const name = slice?.name || slice?.role || "Early Supporters";
+              const name = slice?.id === 'early-supporters' ? 'Curators' : (slice?.name || slice?.role);
               const amount = calculateAmount(percent);
               const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : (ROLES[slice?.role as keyof typeof ROLES]?.color || ROLES.Curator.color);
               return (
@@ -647,9 +647,8 @@ const FundingControls = memo(function FundingControls({
             <div className="curator-toggle">
               <div className="space-y-0.5">
                 <Label htmlFor="curator-shares" className="text-sm">
-                  Early Supporters
+                  Curator Support
                 </Label>
-                <p className="text-xs text-gray-500">Reward project backers with additional revenue share</p>
               </div>
               <div className="flex items-center gap-2">
                 <motion.div animate={{ scale: isIconPulsing ? [1, 1.2, 1] : 1 }} transition={{ duration: 0.5 }}>
@@ -668,10 +667,6 @@ const FundingControls = memo(function FundingControls({
                   transition={{ duration: 0.3 }}
                   className="mt-3"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Crown className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm">Reward your early believers with bonus %</span>
-                  </div>
                   <div className="mt-4">
                     <RangeSlider
                       value={curatorPercentage}
@@ -728,7 +723,7 @@ const DealSummary = memo(function DealSummary({
 
           {enableCuratorShares && (
             <div className="flex justify-between items-center pb-2 border-b">
-              <span className="text-sm">Early Supporters</span>
+              <span className="text-sm">Curator Support</span>
               <span className="font-medium">{curatorPercentage}%</span>
             </div>
           )}
