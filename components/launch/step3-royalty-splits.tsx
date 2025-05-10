@@ -154,7 +154,6 @@ const RangeSlider = memo(function RangeSlider({
   max,
   color,
   showValue = true,
-  collaboratorName,
 }: {
   value: number;
   onChange: (value: number) => void;
@@ -162,13 +161,13 @@ const RangeSlider = memo(function RangeSlider({
   max: number;
   color: string;
   showValue?: boolean;
-  collaboratorName?: string;
 }) {
   const [isChanging, setIsChanging] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsChanging(true);
-    onChange(Number(e.target.value));
+    const newValue = Number(e.target.value);
+    onChange(newValue);
     setTimeout(() => setIsChanging(false), 300);
   };
 
@@ -194,15 +193,14 @@ const RangeSlider = memo(function RangeSlider({
         type="range"
         min={min}
         max={max}
-        value={value}
+        value={value || 0}
         onChange={handleChange}
         className="slider-input"
         style={{ color }}
-        aria-label={`Revenue share for ${collaboratorName || "collaborator"}`}
       />
       {showValue && (
         <motion.div className="slider-value" animate={{ scale: isChanging ? 1.1 : 1 }} transition={{ duration: 0.2 }}>
-          {value}%
+          {value || 0}%
         </motion.div>
       )}
     </div>
@@ -389,7 +387,6 @@ const CollaboratorCard = memo(function CollaboratorCard({
                 min={0}
                 max={100}
                 color={roleConfig.color}
-                collaboratorName={collaborator.name}
               />
               {error?.percentage && <p className="text-red-500 text-xs mt-1">{error.percentage}</p>}
             </div>
@@ -400,78 +397,107 @@ const CollaboratorCard = memo(function CollaboratorCard({
   );
 });
 
-// SplitPieChart component
-const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collaborators: Collaborator[] }) {
+// Update SplitPieChart component props
+const PLATFORM_FEE = 2.5;
+const PLATFORM_FEE_COLOR = '#6B7280'; // Tailwind gray-500
+const SplitPieChart = memo(function SplitPieChart({ 
+  collaborators,
+  curatorPercentage,
+  enableCuratorShares,
+  targetRaise 
+}: { 
+  collaborators: Collaborator[];
+  curatorPercentage: number;
+  enableCuratorShares: boolean;
+  targetRaise: number | null;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredSlice, setHoveredSlice] = useState<number | null>(null);
   const [activeSlice, setActiveSlice] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
+  // Calculate amount for a given percentage
+  const calculateAmount = (percentage: number) => {
+    if (!targetRaise) return null;
+    return (targetRaise * percentage) / 100;
+  };
+
+  // Format amount with commas and 2 decimal places
+  const formatAmount = (amount: number | null) => {
+    if (amount === null) return '';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  // Compose all slices: collaborators, early supporters, platform fee
+  const allSlices = [
+    ...collaborators,
+    ...(enableCuratorShares && curatorPercentage > 0
+      ? [{
+          id: 'early-supporters',
+          name: 'Curators',
+          role: 'Curator',
+          email: '',
+          walletAddress: '',
+          percentage: curatorPercentage,
+          color: ROLES.Curator.color
+        }]
+      : []),
+    {
+      id: 'platform-fee',
+      name: 'Platform Fee',
+      role: 'Platform',
+      email: '',
+      walletAddress: '',
+      percentage: PLATFORM_FEE,
+      color: PLATFORM_FEE_COLOR
+    }
+  ];
+
   useEffect(() => {
     if (!canvasRef.current) return;
-
     const ctx = canvasRef.current.getContext("2d");
     if (!ctx) return;
-
     const canvas = canvasRef.current;
     const width = canvas.width;
     const height = canvas.height;
     const radius = Math.min(width, height) / 2;
     const centerX = width / 2;
     const centerY = height / 2;
-
-    // Clear canvas
     ctx.clearRect(0, 0, width, height);
-
-    // Create a map to track role counts
-    const roleCount = new Map<string, number>();
-
-    // Filter out collaborators with 0%
-    const validCollaborators = collaborators.filter((c) => c.percentage > 0);
-
-    // Draw pie chart
     let startAngle = 0;
-    validCollaborators.forEach((collaborator) => {
-      // Get or increment role count
-      const count = roleCount.get(collaborator.role) || 0;
-      roleCount.set(collaborator.role, count + 1);
-
-      const sliceAngle = (collaborator.percentage / 100) * 2 * Math.PI;
-      const color = getRoleColor(collaborator.role, count);
-
+    allSlices.forEach((slice, idx) => {
+      const sliceAngle = (slice.percentage / 100) * 2 * Math.PI;
+      const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : slice.color;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
       ctx.closePath();
-
-      // Add hover effect
-      const isHovered = hoveredSlice === validCollaborators.indexOf(collaborator);
+      const isHovered = hoveredSlice === idx;
       ctx.fillStyle = isHovered ? `${color}CC` : color;
       ctx.fill();
-
-      // Draw label if slice is big enough
-      if (collaborator.percentage >= 5) {
+      if (slice.percentage >= 5) {
         const labelAngle = startAngle + sliceAngle / 2;
         const labelRadius = radius * 0.7;
         const labelX = centerX + Math.cos(labelAngle) * labelRadius;
         const labelY = centerY + Math.sin(labelAngle) * labelRadius;
-
         ctx.fillStyle = "#FFFFFF";
         ctx.font = "bold 12px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(`${collaborator.percentage}%`, labelX, labelY);
+        ctx.fillText(`${slice.percentage}%`, labelX, labelY);
       }
-
       startAngle += sliceAngle;
     });
-
-    // Draw center circle (hole)
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius * 0.5, 0, 2 * Math.PI);
     ctx.fillStyle = "#FFFFFF";
     ctx.fill();
-  }, [collaborators, hoveredSlice]);
+  }, [allSlices, hoveredSlice]);
 
   return (
     <div className="flex flex-col items-center">
@@ -486,16 +512,14 @@ const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collabora
           onMouseMove={(e) => {
             const canvas = canvasRef.current;
             if (!canvas) return;
-
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left - canvas.width / 2;
             const y = e.clientY - rect.top - canvas.height / 2;
             const angle = Math.atan2(y, x);
             const normalizedAngle = (angle + Math.PI * 2) % (Math.PI * 2);
-
             let startAngle = 0;
-            collaborators.forEach((collaborator, index) => {
-              const sliceAngle = (collaborator.percentage / 100) * 2 * Math.PI;
+            allSlices.forEach((slice, index) => {
+              const sliceAngle = (slice.percentage / 100) * 2 * Math.PI;
               if (normalizedAngle >= startAngle && normalizedAngle < startAngle + sliceAngle) {
                 setHoveredSlice(index);
                 setActiveSlice(index);
@@ -521,26 +545,42 @@ const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collabora
               transform: "translateX(-50%)",
             }}
           >
-            <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: ROLES[collaborators[hoveredSlice].role as keyof typeof ROLES].color }}
-              />
-              <span>{collaborators[hoveredSlice].name || collaborators[hoveredSlice].role}</span>
-              <span className="font-medium">{collaborators[hoveredSlice].percentage}%</span>
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              {`${collaborators[hoveredSlice].percentage}% of every $100`}
-            </div>
+            {(() => {
+              const slice = allSlices[hoveredSlice];
+              const percent = slice?.percentage || 0;
+              const name = slice?.id === 'early-supporters' ? 'Curators' : (slice?.name || slice?.role);
+              const amount = calculateAmount(percent);
+              const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : (ROLES[slice?.role as keyof typeof ROLES]?.color || ROLES.Curator.color);
+              return (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span>{name}</span>
+                    <span className="font-medium">{percent}%</span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {`${percent}% of every $100`}
+                  </div>
+                  {targetRaise && amount !== null && (
+                    <div className="text-xs text-gray-800 mt-1 font-semibold">
+                      {formatAmount(amount)} USDC from target raise
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </motion.div>
         )}
       </div>
       <motion.div className="grid grid-cols-2 gap-2 w-full">
-        {collaborators.map((collaborator, index) => {
-          const roleConfig = ROLES[collaborator.role as keyof typeof ROLES] || ROLES.Artist;
+        {allSlices.map((slice, index) => {
+          const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : (ROLES[slice.role as keyof typeof ROLES]?.color || ROLES.Artist.color);
           return (
             <motion.div
-              key={collaborator.id}
+              key={slice.id + index}
               className={`flex items-center text-sm p-2 rounded-lg transition-colors ${
                 hoveredSlice === index ? "bg-gray-100" : ""
               }`}
@@ -549,9 +589,9 @@ const SplitPieChart = memo(function SplitPieChart({ collaborators }: { collabora
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2, delay: index * 0.1 }}
             >
-              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: roleConfig.color }}></div>
-              <span className="truncate">{collaborator.name || collaborator.role}</span>
-              <span className="ml-1 font-medium">{collaborator.percentage}%</span>
+              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></div>
+              <span className="truncate flex-1 min-w-0">{slice.name || slice.role}</span>
+              <span className="ml-1 font-medium">{slice.percentage}%</span>
             </motion.div>
           );
         })}
@@ -607,9 +647,8 @@ const FundingControls = memo(function FundingControls({
             <div className="curator-toggle">
               <div className="space-y-0.5">
                 <Label htmlFor="curator-shares" className="text-sm">
-                  Early Curator Shares
+                  Curator Support
                 </Label>
-                <p className="text-xs text-gray-500">Reward early supporters with additional revenue share</p>
               </div>
               <div className="flex items-center gap-2">
                 <motion.div animate={{ scale: isIconPulsing ? [1, 1.2, 1] : 1 }} transition={{ duration: 0.5 }}>
@@ -628,18 +667,13 @@ const FundingControls = memo(function FundingControls({
                   transition={{ duration: 0.3 }}
                   className="mt-3"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Crown className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm">Reward your early believers with bonus %</span>
-                  </div>
                   <div className="mt-4">
                     <RangeSlider
                       value={curatorPercentage}
                       onChange={onCuratorPercentageChange}
                       min={1}
-                      max={20}
+                      max={50}
                       color={ROLES.Curator.color}
-                      collaboratorName="Curator"
                     />
                   </div>
                 </motion.div>
@@ -689,7 +723,7 @@ const DealSummary = memo(function DealSummary({
 
           {enableCuratorShares && (
             <div className="flex justify-between items-center pb-2 border-b">
-              <span className="text-sm">Early Curator Share</span>
+              <span className="text-sm">Curator Support</span>
               <span className="font-medium">{curatorPercentage}%</span>
             </div>
           )}
@@ -757,7 +791,7 @@ interface Step2Props {
   isLastStep: boolean;
 }
 
-export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
+export default function Step3RoyaltySplits({ onNext, onPrevious }: Step2Props) {
   const { projectData, updateField } = useLaunchProject();
 
   // Initialize state with artist as first collaborator
@@ -775,8 +809,6 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
 
   const [selectedCollaborator, setSelectedCollaborator] = useState<string>("artist");
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});
-  const [enableCuratorShares, setEnableCuratorShares] = useState<boolean>(false);
-  const [curatorPercentage, setCuratorPercentage] = useState<number>(5);
   const platformFee = 2.5; // Fixed platform fee
   const [emojiPickerState, setEmojiPickerState] = useState<Record<string, boolean>>({});
 
@@ -903,13 +935,13 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
 
   // Handle curator shares toggle
   const handleCuratorSharesChange = useCallback((checked: boolean) => {
-    setEnableCuratorShares(checked);
-  }, []);
+    updateField("enableEarlySupporters", checked);
+  }, [updateField]);
 
   // Handle curator percentage change
   const handleCuratorPercentageChange = useCallback((value: number) => {
-    setCuratorPercentage(value);
-  }, []);
+    updateField("earlySupportersPercentage", value);
+  }, [updateField]);
 
   // Validate the form
   const validateForm = useCallback(() => {
@@ -1067,14 +1099,19 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
           <Card>
             <CardContent className="p-4">
               <h3 className="text-lg font-medium mb-4">Revenue Split</h3>
-              <SplitPieChart collaborators={collaborators} />
+              <SplitPieChart 
+                collaborators={collaborators} 
+                curatorPercentage={projectData.earlySupportersPercentage}
+                enableCuratorShares={projectData.enableEarlySupporters}
+                targetRaise={projectData.targetRaise}
+              />
             </CardContent>
           </Card>
 
           {/* Funding controls */}
           <FundingControls
-            enableCuratorShares={enableCuratorShares}
-            curatorPercentage={curatorPercentage}
+            enableCuratorShares={projectData.enableEarlySupporters}
+            curatorPercentage={projectData.earlySupportersPercentage}
             platformFee={platformFee}
             onCuratorSharesChange={handleCuratorSharesChange}
             onCuratorPercentageChange={handleCuratorPercentageChange}
@@ -1084,8 +1121,8 @@ export default function Step2RoyaltySplits({ onNext, onPrevious }: Step2Props) {
           <DealSummary
             collaborators={collaborators}
             platformFee={platformFee}
-            curatorPercentage={curatorPercentage}
-            enableCuratorShares={enableCuratorShares}
+            curatorPercentage={projectData.earlySupportersPercentage}
+            enableCuratorShares={projectData.enableEarlySupporters}
           />
         </div>
       </div>

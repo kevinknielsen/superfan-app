@@ -10,19 +10,44 @@ import { useLaunchProject } from "@/contexts/launch-project-context"
 
 // Step components
 import Step1ProjectInfo from "./step1-project-info"
-import Step2RoyaltySplits from "./step2-royalty-splits"
+import Step2Financing from "./step2-financing"
+import Step3RoyaltySplits from "./step3-royalty-splits"
 import Step3Milestones from "./step3-milestones"
-import Step4Financing from "./step4-financing"
 import Step5ReviewPublish from "./step5-review-publish"
 
 const TOTAL_STEPS = 5
 
 const steps = [
-  { id: 1, title: "Project Info" },
-  { id: 2, title: "Royalty Splits" },
-  { id: 3, title: "Milestones" },
-  { id: 4, title: "Financing" },
-  { id: 5, title: "Review & Publish" },
+  {
+    id: 1,
+    title: "Project Info",
+    description: "Basic information about your project",
+    component: Step1ProjectInfo,
+  },
+  {
+    id: 2,
+    title: "Financing",
+    description: "Set up financing options",
+    component: Step2Financing,
+  },
+  {
+    id: 3,
+    title: "Royalty Splits",
+    description: "Define revenue sharing",
+    component: Step3RoyaltySplits,
+  },
+  {
+    id: 4,
+    title: "Milestones",
+    description: "Set project milestones",
+    component: Step3Milestones,
+  },
+  {
+    id: 5,
+    title: "Review & Publish",
+    description: "Review and publish your project",
+    component: Step5ReviewPublish,
+  },
 ] as const
 
 export default function LaunchProjectWizard() {
@@ -153,7 +178,7 @@ export default function LaunchProjectWizard() {
                 />
               )}
               {currentStep === 2 && (
-                <Step2RoyaltySplits 
+                <Step2Financing 
                   onNext={handleNext}
                   onPrevious={handleBack}
                   isFirstStep={false}
@@ -161,7 +186,7 @@ export default function LaunchProjectWizard() {
                 />
               )}
               {currentStep === 3 && (
-                <Step3Milestones 
+                <Step3RoyaltySplits 
                   onNext={handleNext}
                   onPrevious={handleBack}
                   isFirstStep={false}
@@ -169,7 +194,7 @@ export default function LaunchProjectWizard() {
                 />
               )}
               {currentStep === 4 && (
-                <Step4Financing 
+                <Step3Milestones 
                   onNext={handleNext}
                   onPrevious={handleBack}
                   isFirstStep={false}

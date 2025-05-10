@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent, useMemo } from "react";
+import { useState, type ChangeEvent, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { Check } from "lucide-react";
 import supabase from "@/lib/supabaseClient";
 import { ProjectData, Curator } from "@/contexts/launch-project-context";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Step4Props {
   onNext: () => void;
@@ -25,28 +28,14 @@ function validateFinancingForm(projectData: ProjectData) {
     errors.targetRaise = "Target raise amount is required";
   }
 
-  if (!projectData.minContribution) {
-    errors.minContribution = "Minimum contribution is required";
-  } else if (projectData.targetRaise && projectData.minContribution > projectData.targetRaise) {
-    errors.minContribution = "Minimum contribution cannot exceed target raise";
+  if (!projectData.financingStartDate) {
+    errors.financingStartDate = "Start date is required";
   }
 
-  if (!projectData.maxContribution) {
-    errors.maxContribution = "Maximum contribution is required";
-  } else if (projectData.minContribution && projectData.maxContribution < projectData.minContribution) {
-    errors.maxContribution = "Maximum contribution cannot be less than minimum";
-  } else if (projectData.targetRaise && projectData.maxContribution > projectData.targetRaise) {
-    errors.maxContribution = "Maximum contribution cannot exceed target raise";
-  }
-
-  if (!projectData.startDate) {
-    errors.startDate = "Start date is required";
-  }
-
-  if (!projectData.endDate) {
-    errors.endDate = "End date is required";
-  } else if (projectData.startDate && new Date(projectData.endDate) <= new Date(projectData.startDate)) {
-    errors.endDate = "End date must be after start date";
+  if (!projectData.financingEndDate) {
+    errors.financingEndDate = "End date is required";
+  } else if (projectData.financingStartDate && new Date(projectData.financingEndDate) <= new Date(projectData.financingStartDate)) {
+    errors.financingEndDate = "End date must be after start date";
   }
 
   return errors;
@@ -75,7 +64,7 @@ function CuratorCard({ curator, onClick }: { curator: Curator; onClick: (id: str
   );
 }
 
-export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
+export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
   const { projectData, updateField, toggleCurator } = useLaunchProject();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -93,6 +82,19 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
 
   const toggleFinancing = (checked: boolean) => {
     updateField("enableFinancing", checked);
+  };
+
+  const handleStartDateChange = (date: Date | null) => {
+    updateField("financingStartDate", date);
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    updateField("financingEndDate", date);
+  };
+
+  const handleDateRangeChange = (range: { from: Date; to: Date }) => {
+    updateField("financingStartDate", range.from);
+    updateField("financingEndDate", range.to);
   };
 
   const handleNext = async () => {
@@ -113,10 +115,8 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
       project_id: projectData.id,
       enabled: projectData.enableFinancing,
       target_raise: projectData.targetRaise,
-      min_contribution: projectData.minContribution,
-      max_contribution: projectData.maxContribution,
-      start_date: projectData.startDate,
-      end_date: projectData.endDate,
+      start_date: projectData.financingStartDate,
+      end_date: projectData.financingEndDate,
     });
     setIsLoading(false);
 
@@ -132,23 +132,90 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
     [projectData.selectedCurators]
   );
 
+  // Validate the form
+  const validateForm = useCallback(() => {
+    const newErrors: Record<string, string> = {};
+
+    if (projectData.enableFinancing) {
+      if (!projectData.targetRaise || projectData.targetRaise <= 0) {
+        newErrors.targetRaise = "Please enter a valid target raise amount";
+      }
+      if (!projectData.financingStartDate) {
+        newErrors.financingStartDate = "Please select a start date";
+      }
+      if (!projectData.financingEndDate) {
+        newErrors.financingEndDate = "Please select an end date";
+      }
+      if (projectData.financingStartDate && projectData.financingEndDate && projectData.financingStartDate > projectData.financingEndDate) {
+        newErrors.financingEndDate = "End date must be after start date";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [projectData]);
+
+  // Handle next step
+  const handleNextCallback = useCallback(() => {
+    if (validateForm()) {
+      onNext();
+    }
+  }, [validateForm, onNext]);
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold mb-4">Financing</h2>
         <p className="text-gray-600 mb-6">
-          Set up financing options for your project or keep it private until a curator discovers it.
+          Do you want to raise funds for your project?
         </p>
       </div>
 
-      <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="flex-1">
-          <h3 className="font-medium">Enable Financing</h3>
-          <p className="text-sm text-gray-500">
-            Allow curators to raise funds for your project. If disabled, your project will remain private.
-          </p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <h3 className="text-lg font-medium text-gray-900">Enable Financing</h3>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <InformationCircleIcon className="h-5 w-5 text-gray-400" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Enable financing to allow fans to invest in your project
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <Switch
+            checked={projectData.enableFinancing}
+            onCheckedChange={(checked) => {
+              updateField("enableFinancing", checked);
+              // Reset financing fields when disabled
+              if (!checked) {
+                updateField("targetRaise", null);
+                updateField("financingStartDate", null);
+                updateField("financingEndDate", null);
+              }
+            }}
+            disabled={!projectData.enableEarlySupporters}
+            className={`${
+              projectData.enableFinancing ? "bg-indigo-600" : "bg-gray-200"
+            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+              !projectData.enableEarlySupporters ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            <span
+              className={`${
+                projectData.enableFinancing ? "translate-x-6" : "translate-x-1"
+              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+            />
+          </Switch>
         </div>
-        <Switch checked={projectData.enableFinancing} onCheckedChange={toggleFinancing} aria-label="Enable financing" />
+        {!projectData.enableEarlySupporters && (
+          <p className="text-sm text-gray-500">
+            You must enable Early Supporters in Step 2 to use financing.
+          </p>
+        )}
       </div>
 
       {projectData.enableFinancing ? (
@@ -173,75 +240,35 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
               <p className="text-gray-500 text-sm mt-1">Total amount you aim to raise for this project</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="minContribution" className={errors.minContribution ? "text-red-500" : ""}>
-                  Min Contribution (USDC)
-                </Label>
-                <Input
-                  id="minContribution"
-                  name="minContribution"
-                  type="number"
-                  min="0"
-                  step="10"
-                  placeholder="e.g., 100"
-                  value={projectData.minContribution === null ? "" : projectData.minContribution}
-                  onChange={handleChange}
-                  className={errors.minContribution ? "border-red-500" : ""}
-                />
-                {errors.minContribution && <p className="text-red-500 text-sm mt-1">{errors.minContribution}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="maxContribution" className={errors.maxContribution ? "text-red-500" : ""}>
-                  Max Contribution (USDC)
-                </Label>
-                <Input
-                  id="maxContribution"
-                  name="maxContribution"
-                  type="number"
-                  min="0"
-                  step="100"
-                  placeholder="e.g., 5000"
-                  value={projectData.maxContribution === null ? "" : projectData.maxContribution}
-                  onChange={handleChange}
-                  className={errors.maxContribution ? "border-red-500" : ""}
-                />
-                {errors.maxContribution && <p className="text-red-500 text-sm mt-1">{errors.maxContribution}</p>}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate" className={errors.startDate ? "text-red-500" : ""}>
-                  Fundraising Start Date
-                </Label>
-                <Input
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date</Label>
+                <DatePicker
                   id="startDate"
-                  name="startDate"
-                  type="date"
-                  value={projectData.startDate}
-                  onChange={handleChange}
-                  className={errors.startDate ? "border-red-500" : ""}
-                  min={new Date().toISOString().split("T")[0]} // Today's date as minimum
+                  selected={projectData.financingStartDate}
+                  onChange={handleStartDateChange}
+                  minDate={new Date()}
+                  maxDate={projectData.financingEndDate || undefined}
+                  placeholderText="Select start date"
+                  className="w-full"
                 />
-                {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
+                {errors.financingStartDate && (
+                  <p className="text-sm text-red-500">{errors.financingStartDate}</p>
+                )}
               </div>
-
-              <div>
-                <Label htmlFor="endDate" className={errors.endDate ? "text-red-500" : ""}>
-                  Fundraising End Date
-                </Label>
-                <Input
+              <div className="space-y-2">
+                <Label htmlFor="endDate">End Date</Label>
+                <DatePicker
                   id="endDate"
-                  name="endDate"
-                  type="date"
-                  value={projectData.endDate}
-                  onChange={handleChange}
-                  className={errors.endDate ? "border-red-500" : ""}
-                  min={projectData.startDate || new Date().toISOString().split("T")[0]}
+                  selected={projectData.financingEndDate}
+                  onChange={handleEndDateChange}
+                  minDate={projectData.financingStartDate || new Date()}
+                  placeholderText="Select end date"
+                  className="w-full"
                 />
-                {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
+                {errors.financingEndDate && (
+                  <p className="text-sm text-red-500">{errors.financingEndDate}</p>
+                )}
               </div>
             </div>
           </div>
@@ -279,8 +306,8 @@ export default function Step4Financing({ onNext, onPrevious }: Step4Props) {
         <Button variant="ghost" onClick={onPrevious} disabled={isLoading}>
           Back
         </Button>
-        <Button onClick={handleNext} className="bg-[#0f172a] hover:bg-[#1e293b]" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Continue to Review"}
+        <Button onClick={handleNextCallback} className="bg-[#0f172a] hover:bg-[#1e293b]" disabled={isLoading}>
+          {isLoading ? "Saving..." : "Continue to Royalty Splits"}
         </Button>
       </div>
     </div>
