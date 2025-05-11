@@ -16,9 +16,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             <nav className="flex md:flex-col overflow-x-auto md:overflow-visible pb-2 md:pb-0">
               <div className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1">
                 <SettingsNavLink href="/settings/wallet">Wallet</SettingsNavLink>
-                <SettingsNavLink href="/settings/profile">Profile</SettingsNavLink>
-                <SettingsNavLink href="/settings/notifications">Notifications</SettingsNavLink>
-                <SettingsNavLink href="/settings/documents">Documents</SettingsNavLink>
+                <span className="px-4 py-2 whitespace-nowrap md:whitespace-normal text-gray-400 cursor-not-allowed select-none" aria-disabled="true" title="Coming soon">Profile</span>
+                <span className="px-4 py-2 whitespace-nowrap md:whitespace-normal text-gray-400 cursor-not-allowed select-none" aria-disabled="true" title="Coming soon">Notifications</span>
+                <span className="px-4 py-2 whitespace-nowrap md:whitespace-normal text-gray-400 cursor-not-allowed select-none" aria-disabled="true" title="Coming soon">Documents</span>
               </div>
             </nav>
           </aside>

@@ -95,7 +95,7 @@ export default function WalletPage() {
       </div>
 
       {/* Wallet Address Section */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Wallet Address</h2>
         <div className="flex items-center gap-2">
           <p className="font-mono text-sm break-all">
@@ -115,18 +115,17 @@ export default function WalletPage() {
       </div>
 
       {/* Sign Message Section */}
-      <div className="mb-8">
+      {/* <div className="mb-8">
         <SignMessage />
-      </div>
+      </div> */}
 
       {/* Claims from investment */}
-      <div className="mb-8">
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Claims from investment</h2>
           <span className="bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">0</span>
         </div>
-
-        <div className="bg-white rounded-lg shadow p-8 flex flex-col items-center justify-center text-center">
+        <div className="flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <LinkIcon className="h-8 w-8 text-gray-400" />
           </div>

@@ -95,34 +95,12 @@ function MobileMenu({
         <Link href="/groups" className="text-gray-300 hover:text-white py-2" onClick={() => setMobileMenuOpen(false)}>
           Curators
         </Link>
-        <Link
-          href="/settings/profile"
-          className="text-gray-300 hover:text-white py-2"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          Profile
-        </Link>
-        <Link
-          href="/settings/wallet"
-          className="text-gray-300 hover:text-white py-2"
-          onClick={() => setMobileMenuOpen(false)}
-        >
+        <span className="text-gray-500 py-2 cursor-not-allowed select-none" aria-disabled="true" title="Coming soon">Profile</span>
+        <Link href="/settings/wallet" className="text-gray-300 hover:text-white py-2" onClick={() => setMobileMenuOpen(false)}>
           Wallet
         </Link>
-        <Link
-          href="/settings/notifications"
-          className="text-gray-300 hover:text-white py-2"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          Notifications
-        </Link>
-        <Link
-          href="/settings/documents"
-          className="text-gray-300 hover:text-white py-2"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          Documents
-        </Link>
+        <span className="text-gray-500 py-2 cursor-not-allowed select-none" aria-disabled="true" title="Coming soon">Notifications</span>
+        <span className="text-gray-500 py-2 cursor-not-allowed select-none" aria-disabled="true" title="Coming soon">Documents</span>
         <button
           onClick={() => {
             logout();

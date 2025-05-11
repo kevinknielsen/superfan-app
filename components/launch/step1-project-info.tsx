@@ -540,10 +540,6 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
               className={`min-h-[100px] ${errors.description ? "border-red-500" : ""}`}
               aria-label="Project description"
             />
-            <div className="absolute bottom-0 right-0 transform translate-y-full pt-2 flex items-center gap-2 text-gray-500 text-sm">
-              <HelpCircle className="w-4 h-4" />
-              <span>{tips[currentTip]}</span>
-            </div>
           </div>
           {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
           {hasMounted && (
@@ -569,7 +565,7 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
           </Label>
           <div className="mt-2">
             {projectData.trackDemoPreview ? (
-              <div className="relative flex flex-col p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="relative flex flex-col p-4 bg-white text-[#0f172a] rounded-lg border border-[#a259ff]">
                 <div className="flex items-center mb-4">
                   <div className="mr-4">
                     <button
@@ -594,7 +590,6 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
-
                 {/* Waveform Visualizer */}
                 <div className="w-full h-16 mb-2 bg-gray-100 rounded-lg overflow-hidden">
                   <div className="w-full h-full flex items-center justify-center">
@@ -613,7 +608,6 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                     )}
                   </div>
                 </div>
-
                 {/* Progress Slider */}
                 <div className="w-full flex items-center gap-2">
                   <span className="text-xs text-gray-500">{formatTime(currentTime)}</span>
@@ -627,14 +621,13 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                   />
                   <span className="text-xs text-gray-500">{formatTime(duration)}</span>
                 </div>
-
                 <audio ref={audioRef} src={projectData.trackDemoPreview} className="hidden" />
               </div>
             ) : (
               <div className="flex items-center justify-center w-full">
                 <label
                   htmlFor="trackDemo"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-white hover:bg-[#f3e8ff] border-[#a259ff]"
                   aria-label="Upload track demo"
                 >
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -656,123 +649,6 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
               </div>
             )}
             {errors.trackDemo && <p className="text-red-500 text-sm mt-1">{errors.trackDemo}</p>}
-          </div>
-        </div>
-
-        {/* Voice Note Upload Section */}
-        <div className="mt-6">
-          <Label htmlFor="voiceNote">Add a voice intro for your fans (optional)</Label>
-          <div className="mt-2">
-            {projectData.voiceNotePreview ? (
-              <div className="relative flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="mr-4">
-                  <button
-                    type="button"
-                    onClick={togglePlayPause}
-                    className="w-10 h-10 flex items-center justify-center bg-[#0f172a] text-white rounded-full hover:bg-[#1e293b] transition-colors"
-                    aria-label={isPlaying ? "Pause audio" : "Play audio"}
-                  >
-                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </button>
-                </div>
-                <div className="flex-grow">
-                  <p className="font-medium truncate">Voice Note</p>
-                  <p className="text-sm text-gray-500">30s max</p>
-                  <div className="w-full h-1 bg-gray-200 rounded-full mt-2">
-                    <div className="w-1/3 h-full bg-[#0f172a] rounded-full"></div>
-                  </div>
-                  <audio ref={voiceNoteRef} src={projectData.voiceNotePreview} className="hidden" />
-                </div>
-                <button
-                  type="button"
-                  onClick={removeVoiceNote}
-                  className="ml-2 text-gray-500 hover:text-red-500"
-                  aria-label="Remove voice note"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center w-full">
-                <label
-                  htmlFor="voiceNote"
-                  className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
-                  aria-label="Upload voice note"
-                >
-                  <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                    <Mic className="w-6 h-6 mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-500">
-                      <span className="font-semibold">Click to record</span> a 30s voice note
-                    </p>
-                  </div>
-                  <input
-                    id="voiceNote"
-                    type="file"
-                    accept="audio/*"
-                    className="hidden"
-                    onChange={handleVoiceNoteChange}
-                    aria-label="Select voice note file"
-                  />
-                </label>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Additional Files Upload Section */}
-        <div className="mt-6">
-          <Label htmlFor="additionalFiles">Additional Files (Optional)</Label>
-          <p className="text-sm text-gray-500 mb-2">
-            Upload any additional files that might help explain your project (PDFs, docs, images, etc.)
-          </p>
-
-          {/* File list */}
-          {projectData.additionalFilesInfo.length > 0 && (
-            <div className="mb-4 space-y-2">
-              {projectData.additionalFilesInfo.map((file) => (
-                <div key={file.id} className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="mr-3">
-                    <FileText className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="flex-grow">
-                    <p className="font-medium truncate">{file.name}</p>
-                    <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeAdditionalFile(file.id)}
-                    className="ml-2 text-gray-500 hover:text-red-500"
-                    aria-label={`Remove ${file.name}`}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Upload button */}
-          <div className="flex items-center justify-center w-full">
-            <label
-              htmlFor="additionalFiles"
-              className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
-              aria-label="Upload additional files"
-            >
-              <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                <FileText className="w-6 h-6 mb-2 text-gray-400" />
-                <p className="text-sm text-gray-500">
-                  <span className="font-semibold">Click to upload</span> additional files
-                </p>
-              </div>
-              <input
-                id="additionalFiles"
-                type="file"
-                multiple
-                className="hidden"
-                onChange={handleAdditionalFilesChange}
-                aria-label="Select additional files"
-              />
-            </label>
           </div>
         </div>
       </div>

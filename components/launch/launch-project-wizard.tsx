@@ -142,15 +142,17 @@ export default function LaunchProjectWizard() {
                 key={step.id}
                 onClick={() => handleStepClick(step.id)}
                 className="relative group cursor-pointer"
+                aria-current={step.id === currentStep ? "step" : undefined}
               >
                 <div
-                  className={`w-3 h-3 rounded-full transition-all ${
-                    step.id === currentStep
-                      ? "bg-blue-600 ring-4 ring-blue-100"
-                      : step.id <= highestStepSeen
-                      ? "bg-green-500"
-                      : "bg-gray-300"
-                  }`}
+                  className={`w-4 h-4 rounded-full transition-all
+                    ${step.id === currentStep
+                      ? "bg-gradient-to-r from-[#a259ff] to-[#f857a6]"
+                      : step.id < currentStep
+                        ? "bg-[#a259ff]"
+                        : "bg-[#e5e7eb]"
+                    }
+                  `}
                 />
                 <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
                   {step.title}

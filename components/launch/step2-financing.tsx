@@ -45,18 +45,22 @@ function CuratorCard({ curator, onClick }: { curator: Curator; onClick: (id: str
   return (
     <button
       onClick={() => onClick(curator.id)}
-      className={`flex items-center p-4 rounded-lg border ${
-        curator.selected ? "border-green-500 bg-green-50" : "border-gray-200"
-      } cursor-pointer transition-all hover:border-green-500 hover:bg-green-50/50`}
+      className={`flex items-center p-4 rounded-lg border transition-all cursor-pointer w-full
+        ${curator.selected
+          ? "border-[#a259ff] bg-white text-[#0f172a] shadow-md"
+          : "border border-gray-200 bg-white text-gray-800 hover:border-[#a259ff] hover:bg-purple-50"}
+      `}
     >
       <div className="flex items-center space-x-3 flex-1">
         <UserAvatar src={curator.avatar || "/placeholder-user.jpg"} name={curator.name} size={40} />
-        <span className="font-medium">{curator.name}</span>
+        <span className="font-medium text-lg">{curator.name}</span>
       </div>
       <div
-        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-          curator.selected ? "border-green-500 bg-green-500 text-white" : "border-gray-300"
-        }`}
+        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+          ${curator.selected
+            ? "border-white bg-white text-[#a259ff]"
+            : "border-gray-300 bg-white"}
+        `}
       >
         {curator.selected && <Check className="w-4 h-4" />}
       </div>
