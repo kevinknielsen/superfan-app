@@ -7,6 +7,7 @@ import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useLaunchProject } from "@/contexts/launch-project-context"
+import { type ReactNode } from "react"
 
 // Step components
 import Step1ProjectInfo from "./step1-project-info"
@@ -15,9 +16,17 @@ import Step3RoyaltySplits from "./step3-royalty-splits"
 import Step3Milestones from "./step3-milestones"
 import Step5ReviewPublish from "./step5-review-publish"
 
+interface Step {
+  id: number
+  title: string
+  description: string
+  component: React.ComponentType<any>
+  disabled?: boolean
+}
+
 const TOTAL_STEPS = 5
 
-const steps = [
+const steps: Step[] = [
   {
     id: 1,
     title: "Project Info",
@@ -41,6 +50,7 @@ const steps = [
     title: "Milestones",
     description: "Set project milestones",
     component: Step3Milestones,
+    disabled: true,
   },
   {
     id: 5,
@@ -48,7 +58,7 @@ const steps = [
     description: "Review and publish your project",
     component: Step5ReviewPublish,
   },
-] as const
+]
 
 export default function LaunchProjectWizard() {
   const router = useRouter()
@@ -68,9 +78,9 @@ export default function LaunchProjectWizard() {
       case 2:
         return projectData.royaltySplits.length > 0
       case 3:
-        return projectData.milestones.length > 0
+        return true // Skip milestones validation
       case 4:
-        return true // Financing is optional
+        return true // Skip milestones validation
       case 5:
         return true
       default:
@@ -81,7 +91,11 @@ export default function LaunchProjectWizard() {
   const handleNext = () => {
     if (currentStep < TOTAL_STEPS) {
       if (validateStep(currentStep)) {
-        const nextStep = currentStep + 1
+        let nextStep = currentStep + 1
+        // Skip the disabled Milestones step
+        if (nextStep === 4) {
+          nextStep = 5
+        }
         setCurrentStep(nextStep)
         setHighestStepSeen(Math.max(highestStepSeen, nextStep))
       }
@@ -97,6 +111,10 @@ export default function LaunchProjectWizard() {
   }
 
   const handleStepClick = (stepId: number) => {
+    // Don't allow clicking on disabled steps
+    if (steps[stepId - 1]?.disabled) {
+      return
+    }
     setCurrentStep(stepId)
     setHighestStepSeen(Math.max(highestStepSeen, stepId))
   }
@@ -141,7 +159,8 @@ export default function LaunchProjectWizard() {
               <button
                 key={step.id}
                 onClick={() => handleStepClick(step.id)}
-                className="relative group cursor-pointer"
+                className={`relative group ${step.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                disabled={step.disabled}
                 aria-current={step.id === currentStep ? "step" : undefined}
               >
                 <div
@@ -189,14 +208,6 @@ export default function LaunchProjectWizard() {
               )}
               {currentStep === 3 && (
                 <Step3RoyaltySplits 
-                  onNext={handleNext}
-                  onPrevious={handleBack}
-                  isFirstStep={false}
-                  isLastStep={false}
-                />
-              )}
-              {currentStep === 4 && (
-                <Step3Milestones 
                   onNext={handleNext}
                   onPrevious={handleBack}
                   isFirstStep={false}
