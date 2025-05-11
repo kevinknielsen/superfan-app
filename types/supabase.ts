@@ -1,6 +1,6 @@
 export type Project = {
   id: string;
-  creator_id: string;
+  creator_id: string | null; // Should never be null for new projects
   title: string;
   artist_name: string;
   description: string | null;

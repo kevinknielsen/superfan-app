@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useLaunchProject } from "@/contexts/launch-project-context";
 import supabase from "@/lib/supabaseClient";
+import { useAuth } from "@/contexts/auth-context";
 
 interface Step1Props {
   onNext: () => void;
@@ -98,6 +99,7 @@ const createSanitizedFile = (file: File): File => {
 
 export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const { projectData, updateField } = useLaunchProject();
+  const { user, isAuthenticated } = useAuth();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -389,74 +391,77 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
   };
 
   const handleNext = async () => {
-    // Validate form before proceeding
-    const isValid = validateForm();
-    if (!isValid) return;
-
-    let coverArtUrl = null;
-    let trackDemoUrl = null;
-    let voiceIntroUrl = null;
-
-    // 1. Upload files to Supabase Storage if present
-    if (projectData.artwork) {
-      console.log("Uploading artwork file:", projectData.artwork);
-      const { data, error } = await supabase.storage
-        .from("project-assets")
-        .upload(`cover-art/${crypto.randomUUID()}-${projectData.artwork.name}`, projectData.artwork);
-      if (error) {
-        console.error("Supabase upload error:", error);
-        setErrors((prev) => ({ ...prev, artwork: "Failed to upload cover art: " + error.message }));
-        return;
-      }
-      coverArtUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
-    }
-    if (projectData.trackDemo) {
-      const { data, error } = await supabase.storage
-        .from("project-assets")
-        .upload(`track-demo/${crypto.randomUUID()}-${projectData.trackDemo.name}`, projectData.trackDemo);
-      if (error) {
-        setErrors((prev) => ({ ...prev, trackDemo: "Failed to upload track demo" }));
-        return;
-      }
-      trackDemoUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
-    }
-    if (projectData.voiceNote) {
-      const { data, error } = await supabase.storage
-        .from("project-assets")
-        .upload(`voice-intro/${crypto.randomUUID()}-${projectData.voiceNote.name}`, projectData.voiceNote);
-      if (error) {
-        setErrors((prev) => ({ ...prev, voiceNote: "Failed to upload voice intro" }));
-        return;
-      }
-      voiceIntroUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
-    }
-
-    // 2. Insert project into Supabase DB
-    const { data, error } = await supabase
-      .from("projects")
-      .insert({
-        title: projectData.title,
-        artist_name: projectData.artistName,
-        description: projectData.description,
-        cover_art_url: coverArtUrl,
-        track_demo_url: trackDemoUrl,
-        voice_intro_url: voiceIntroUrl,
-        // status, platform_fee_pct, early_curator_shares use defaults
-      })
-      .select("id");
-
-    if (error || !data || !data[0]?.id) {
-      setErrors((prev) => ({ ...prev, submit: "Failed to create project" }));
+    if (!isAuthenticated || !user) {
+      setErrors((prev) => ({ ...prev, submit: "You must be logged in to create a project." }));
       return;
     }
+    if (validateForm()) {
+      let coverArtUrl = null;
+      let trackDemoUrl = null;
+      let voiceIntroUrl = null;
 
-    // 3. Save projectId in context/global state
-    if (typeof updateField === "function") {
-      updateField("id" as keyof ProjectData, data[0].id);
+      // 1. Upload files to Supabase Storage if present
+      if (projectData.artwork) {
+        console.log("Uploading artwork file:", projectData.artwork);
+        const { data, error } = await supabase.storage
+          .from("project-assets")
+          .upload(`cover-art/${crypto.randomUUID()}-${projectData.artwork.name}`, projectData.artwork);
+        if (error) {
+          console.error("Supabase upload error:", error);
+          setErrors((prev) => ({ ...prev, artwork: "Failed to upload cover art: " + error.message }));
+          return;
+        }
+        coverArtUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
+      }
+      if (projectData.trackDemo) {
+        const { data, error } = await supabase.storage
+          .from("project-assets")
+          .upload(`track-demo/${crypto.randomUUID()}-${projectData.trackDemo.name}`, projectData.trackDemo);
+        if (error) {
+          setErrors((prev) => ({ ...prev, trackDemo: "Failed to upload track demo" }));
+          return;
+        }
+        trackDemoUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
+      }
+      if (projectData.voiceNote) {
+        const { data, error } = await supabase.storage
+          .from("project-assets")
+          .upload(`voice-intro/${crypto.randomUUID()}-${projectData.voiceNote.name}`, projectData.voiceNote);
+        if (error) {
+          setErrors((prev) => ({ ...prev, voiceNote: "Failed to upload voice intro" }));
+          return;
+        }
+        voiceIntroUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
+      }
+
+      // 2. Insert project into Supabase DB
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          title: projectData.title,
+          artist_name: projectData.artistName,
+          description: projectData.description,
+          cover_art_url: coverArtUrl,
+          track_demo_url: trackDemoUrl,
+          voice_intro_url: voiceIntroUrl,
+          creator_id: user.id,
+          // status, platform_fee_pct, early_curator_shares use defaults
+        })
+        .select("id");
+
+      if (error || !data || !data[0]?.id) {
+        setErrors((prev) => ({ ...prev, submit: "Failed to create project" }));
+        return;
+      }
+
+      // 3. Save projectId in context/global state
+      if (typeof updateField === "function") {
+        updateField("id" as keyof ProjectData, data[0].id);
+      }
+
+      // Proceed to next step
+      onNext();
     }
-
-    // Proceed to next step
-    onNext();
   };
 
   // Format file size to human-readable format

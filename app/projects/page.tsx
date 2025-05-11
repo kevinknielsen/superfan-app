@@ -9,21 +9,24 @@ import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types/supabase";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ProjectReviewDetails } from "@/components/projects/project-review-details";
+import { useAuth } from "@/contexts/auth-context";
 
-function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: string) => void }) {
+function ProjectCard({ project, onDelete, currentUserId }: { project: Project; onDelete: (id: string) => void; currentUserId: string | null }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
+    if (project.creator_id !== currentUserId) {
+      alert("You are not authorized to delete this project.");
+      return;
+    }
     if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
       setIsDeleting(true);
       try {
         const supabase = createClient();
-        const { error } = await supabase.from("projects").delete().eq("id", project.id);
-        
+        const { error } = await supabase.from("projects").delete().eq("id", project.id).eq("creator_id", currentUserId);
         if (error) {
           throw error;
         }
-        
         onDelete(project.id);
       } catch (error) {
         console.error("Error deleting project:", error);
@@ -84,7 +87,7 @@ function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: s
                 variant="destructive"
                 size="sm"
                 onClick={handleDelete}
-                disabled={isDeleting}
+                disabled={isDeleting || project.creator_id !== currentUserId}
                 className="w-full mt-2"
               >
                 {isDeleting ? "Deleting..." : "Delete Project"}
@@ -108,6 +111,7 @@ export default function ProjectsPage() {
   const [modalData, setModalData] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -294,7 +298,11 @@ export default function ProjectsPage() {
                     }
                     onClick={() => handleCardClick(project)}
                   >
-                    <ProjectCard project={project} onDelete={handleDeleteProject} />
+                    <ProjectCard
+                      project={project}
+                      onDelete={handleDeleteProject}
+                      currentUserId={user?.id || null}
+                    />
                   </div>
                 ))
               ) : (
