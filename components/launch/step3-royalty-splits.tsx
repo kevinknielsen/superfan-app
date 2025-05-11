@@ -81,18 +81,11 @@ const ROLES = {
 
 // Color palette for collaborators
 const COLORS = [
-  "#3B82F6", // blue
-  "#10B981", // green
-  "#F59E0B", // amber
-  "#EF4444", // red
-  "#8B5CF6", // purple
-  "#EC4899", // pink
-  "#06B6D4", // cyan
-  "#F97316", // orange
-  "#14B8A6", // teal
-  "#6366F1", // indigo
-  "#D946EF", // fuchsia
-  "#F43F5E", // rose
+  'url(#purplePinkGradient)', // Use a gradient fill for the main slice
+  '#a259ff', // purple
+  '#f857a6', // pink
+  '#c084fc', // soft purple
+  '#fbc2eb', // light pink
 ];
 
 // Add color variations for roles
@@ -228,8 +221,7 @@ const CollaboratorCard = memo(function CollaboratorCard({
       transition={{ duration: 0.25, ease: "easeOut" }}
     >
       <Card
-        className={`mb-4 border-l-4 transition-all ${isSelected ? "ring-2 ring-offset-2 ring-blue-500" : ""}`}
-        style={{ borderLeftColor: roleConfig.color }}
+        className={`mb-4 border transition-all ${isSelected ? "border-[#a259ff]" : "border-gray-200"} bg-white text-[#0f172a]`}
         onClick={onSelect}
       >
         <CardContent className="p-4">
@@ -399,7 +391,7 @@ const CollaboratorCard = memo(function CollaboratorCard({
 
 // Update SplitPieChart component props
 const PLATFORM_FEE = 2.5;
-const PLATFORM_FEE_COLOR = '#6B7280'; // Tailwind gray-500
+const PLATFORM_FEE_COLOR = '#a1a1aa'; // gray-400
 const SplitPieChart = memo(function SplitPieChart({ 
   collaborators,
   curatorPercentage,
@@ -433,9 +425,17 @@ const SplitPieChart = memo(function SplitPieChart({
     }).format(amount);
   };
 
-  // Compose all slices: collaborators, early supporters, platform fee
-  const allSlices = [
-    ...collaborators,
+  // Calculate effective team shares for the pie chart
+  const totalTeamPct = collaborators.reduce((sum, c) => sum + c.percentage, 0);
+  const totalDeductions = (enableCuratorShares ? curatorPercentage : 0) + PLATFORM_FEE;
+  const teamScale = totalTeamPct > 0 ? (100 - totalDeductions) / totalTeamPct : 1;
+
+  const pieSlices = [
+    ...collaborators.map((c) => ({
+      ...c,
+      effectivePercentage: +(c.percentage * teamScale).toFixed(2),
+      color: ROLES[c.role as keyof typeof ROLES]?.color || c.color || ROLES.Artist.color,
+    })),
     ...(enableCuratorShares && curatorPercentage > 0
       ? [{
           id: 'early-supporters',
@@ -443,8 +443,8 @@ const SplitPieChart = memo(function SplitPieChart({
           role: 'Curator',
           email: '',
           walletAddress: '',
-          percentage: curatorPercentage,
-          color: ROLES.Curator.color
+          effectivePercentage: curatorPercentage,
+          color: ROLES.Curator.color,
         }]
       : []),
     {
@@ -453,9 +453,9 @@ const SplitPieChart = memo(function SplitPieChart({
       role: 'Platform',
       email: '',
       walletAddress: '',
-      percentage: PLATFORM_FEE,
-      color: PLATFORM_FEE_COLOR
-    }
+      effectivePercentage: PLATFORM_FEE,
+      color: PLATFORM_FEE_COLOR,
+    },
   ];
 
   useEffect(() => {
@@ -470,8 +470,8 @@ const SplitPieChart = memo(function SplitPieChart({
     const centerY = height / 2;
     ctx.clearRect(0, 0, width, height);
     let startAngle = 0;
-    allSlices.forEach((slice, idx) => {
-      const sliceAngle = (slice.percentage / 100) * 2 * Math.PI;
+    pieSlices.forEach((slice, idx) => {
+      const sliceAngle = (slice.effectivePercentage / 100) * 2 * Math.PI;
       const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : slice.color;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
@@ -480,7 +480,7 @@ const SplitPieChart = memo(function SplitPieChart({
       const isHovered = hoveredSlice === idx;
       ctx.fillStyle = isHovered ? `${color}CC` : color;
       ctx.fill();
-      if (slice.percentage >= 5) {
+      if (slice.effectivePercentage >= 5) {
         const labelAngle = startAngle + sliceAngle / 2;
         const labelRadius = radius * 0.7;
         const labelX = centerX + Math.cos(labelAngle) * labelRadius;
@@ -489,7 +489,7 @@ const SplitPieChart = memo(function SplitPieChart({
         ctx.font = "bold 12px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(`${slice.percentage}%`, labelX, labelY);
+        ctx.fillText(`${slice.effectivePercentage}%`, labelX, labelY);
       }
       startAngle += sliceAngle;
     });
@@ -497,7 +497,7 @@ const SplitPieChart = memo(function SplitPieChart({
     ctx.arc(centerX, centerY, radius * 0.5, 0, 2 * Math.PI);
     ctx.fillStyle = "#FFFFFF";
     ctx.fill();
-  }, [allSlices, hoveredSlice]);
+  }, [pieSlices, hoveredSlice]);
 
   return (
     <div className="flex flex-col items-center">
@@ -518,8 +518,8 @@ const SplitPieChart = memo(function SplitPieChart({
             const angle = Math.atan2(y, x);
             const normalizedAngle = (angle + Math.PI * 2) % (Math.PI * 2);
             let startAngle = 0;
-            allSlices.forEach((slice, index) => {
-              const sliceAngle = (slice.percentage / 100) * 2 * Math.PI;
+            pieSlices.forEach((slice, index) => {
+              const sliceAngle = (slice.effectivePercentage / 100) * 2 * Math.PI;
               if (normalizedAngle >= startAngle && normalizedAngle < startAngle + sliceAngle) {
                 setHoveredSlice(index);
                 setActiveSlice(index);
@@ -546,8 +546,8 @@ const SplitPieChart = memo(function SplitPieChart({
             }}
           >
             {(() => {
-              const slice = allSlices[hoveredSlice];
-              const percent = slice?.percentage || 0;
+              const slice = pieSlices[hoveredSlice];
+              const percent = slice?.effectivePercentage || 0;
               const name = slice?.id === 'early-supporters' ? 'Curators' : (slice?.name || slice?.role);
               const amount = calculateAmount(percent);
               const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : (ROLES[slice?.role as keyof typeof ROLES]?.color || ROLES.Curator.color);
@@ -576,12 +576,12 @@ const SplitPieChart = memo(function SplitPieChart({
         )}
       </div>
       <motion.div className="grid grid-cols-2 gap-2 w-full">
-        {allSlices.map((slice, index) => {
+        {pieSlices.map((slice, index) => {
           const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : (ROLES[slice.role as keyof typeof ROLES]?.color || ROLES.Artist.color);
           return (
             <motion.div
               key={slice.id + index}
-              className={`flex items-center text-sm p-2 rounded-lg transition-colors ${
+              className={`flex flex-col items-start text-sm p-2 rounded-lg transition-colors ${
                 hoveredSlice === index ? "bg-gray-100" : ""
               }`}
               initial={{ opacity: 0, y: 10 }}
@@ -589,9 +589,11 @@ const SplitPieChart = memo(function SplitPieChart({
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2, delay: index * 0.1 }}
             >
-              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></div>
-              <span className="truncate flex-1 min-w-0">{slice.name || slice.role}</span>
-              <span className="ml-1 font-medium">{slice.percentage}%</span>
+              <div className="flex items-center mb-1">
+                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></div>
+                <span className="flex-1 min-w-0 whitespace-nowrap overflow-visible">{slice.name || slice.role}</span>
+              </div>
+              <span className="ml-5 text-xs text-gray-500">{slice.effectivePercentage}%</span>
             </motion.div>
           );
         })}

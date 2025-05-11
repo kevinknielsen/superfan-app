@@ -7,13 +7,12 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { AlertCircle } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { SuperfanLogo } from "@/components/ui/superfan-logo"
 
 export default function LoginPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const searchParams = useSearchParams() || new URLSearchParams()
   const redirectPath = searchParams.get("redirect") || "/browse"
   const { login, isAuthenticated } = useAuth()
 
@@ -42,10 +41,6 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link href="/login" className="flex items-center justify-center">
-            <SuperfanLogo className="h-12 w-auto" inverted={true} />
-            <span className="text-xs text-gray-500 ml-2">BETA</span>
-          </Link>
           <h2 className="mt-6 text-3xl font-bold">Sign in to your account</h2>
           <p className="mt-2 text-gray-600">
             Or{" "}
