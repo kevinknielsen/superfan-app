@@ -165,7 +165,7 @@ const initialState: ProjectData = {
   milestones: [],
 
   // Step 4: Financing
-  enableFinancing: true,
+  enableFinancing: false,
   targetRaise: null,
   minContribution: null,
   maxContribution: null,
