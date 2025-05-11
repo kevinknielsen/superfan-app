@@ -1,10 +1,10 @@
 # Superfan One
 
-![Superfan One](public/placeholder-backgrounds/hero-bg.png)
+<img width="1115" alt="image" src="https://github.com/user-attachments/assets/5114c709-1adc-488f-86dc-ec95570a8f66" />
 
 ## Overview
 
-Superfan One is a platform that connects music artists with investors, allowing fans and investors to participate in the success of music projects. The platform facilitates investment in music projects, tracks royalties, and provides a community for music enthusiasts and investors.
+Superfan One is a music launchpad: a platform for artists and creators to kickstart their music projects and ideas. Collaborators can come together, pitch backers, agree on terms, and split profits in real time before music production even starts.
 
 ## Features
 
