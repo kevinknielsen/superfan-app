@@ -17,11 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PrivyProvider
           appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
           config={{
-            loginMethods: ["email", "wallet"],
+            loginMethods: ["email", "sms", "google"],
             appearance: {
               theme: "light",
               accentColor: "#0f172a",
-              showWalletLoginFirst: true,
             },
           }}
         >

@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { ethers } from "ethers"
 import { base } from 'viem/chains'
 import { useWalletBalance } from "@/hooks/use-wallet-balance"
+import { FundModal } from "@/components/ui/fund-modal"
 
 // USDC contract ABI - only including the functions we need
 const USDC_ABI = [
@@ -26,6 +27,7 @@ const USDC_CONTRACT_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 export default function WalletPage() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
+  const [isFundModalOpen, setIsFundModalOpen] = useState(false)
   const { balance, loading } = useWalletBalance()
   const { wallets } = useWallets()
   const { toast } = useToast()
@@ -82,13 +84,10 @@ export default function WalletPage() {
           <p className="text-3xl font-bold">{Number(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC</p>
         </div>
         <div className="flex gap-4">
-          <Button onClick={() => setIsDepositModalOpen(true)}>
-            Deposit
-          </Button>
           <Button variant="outline" onClick={handleWithdraw}>
             Withdraw
           </Button>
-          <Button onClick={handleFund}>
+          <Button onClick={() => setIsFundModalOpen(true)}>
             Fund
           </Button>
         </div>
@@ -143,6 +142,16 @@ export default function WalletPage() {
           isOpen={isDepositModalOpen}
           onClose={() => setIsDepositModalOpen(false)}
           walletAddress={embeddedWallet.address}
+        />
+      )}
+
+      {/* Fund Modal */}
+      {embeddedWallet && (
+        <FundModal
+          isOpen={isFundModalOpen}
+          onClose={() => setIsFundModalOpen(false)}
+          walletAddress={embeddedWallet.address}
+          onFund={handleFund}
         />
       )}
     </>
