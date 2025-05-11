@@ -8,21 +8,54 @@ Superfan One is a platform that connects music artists with investors, allowing 
 
 ## Features
 
-- **User Authentication**: Secure login and signup functionality
-- **Investment Opportunities**: Browse and invest in music projects
-- **Curators**: Join investment curators led by record labels and curators
-- **Portfolio Dashboard**: Track investments and royalty income
-- **Wallet Management**: Deposit and withdraw funds
-- **Profile Management**: Update personal and investor information
-- **Responsive Design**: Fully responsive UI that works on all devices
+- **Authentication & Wallet Integration**: 
+  - Secure authentication using Privy
+  - Embedded wallet support
+  - Multiple login methods (email, SMS, Google)
+  - Wallet balance tracking for USDC on Base network
+
+- **Investment Features**:
+  - Browse and invest in music projects
+  - Track investments and royalty income
+  - View claims from investments
+  - Royalty split management for collaborators
+
+- **Wallet Management**:
+  - Deposit and withdraw funds
+  - Fund wallet via Coinbase Onramp
+  - USDC balance tracking on Base network
+  - Network selection (Base Mainnet/Testnet)
+
+- **User Features**:
+  - Profile management
+  - Security settings with 2FA support
+  - Responsive design for all devices
+  - Real-time balance updates
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript
-- **Styling**: Tailwind CSS, shadcn/ui components
-- **State Management**: React Context API
-- **Authentication**: Custom auth with localStorage (for demo purposes)
-- **Routing**: Next.js App Router
+- **Frontend**: 
+  - Next.js 14
+  - React
+  - TypeScript
+  - Tailwind CSS
+  - shadcn/ui components
+
+- **Authentication & Wallet**:
+  - Privy for authentication and wallet management
+  - Base network integration
+  - USDC token support
+  - Coinbase Onramp for fiat-to-crypto
+
+- **Backend & Database**:
+  - Supabase for database and authentication
+  - Row-level security policies
+  - Real-time data synchronization
+
+- **Development Tools**:
+  - ESLint and Prettier for code formatting
+  - TypeScript for type safety
+  - Git for version control
 
 ## Getting Started
 
@@ -34,62 +67,62 @@ Superfan One is a platform that connects music artists with investors, allowing 
 ### Installation
 
 1. Clone the repository:
-   \`\`\`bash
+   ```bash
    git clone https://github.com/yourusername/superfan-one.git
    cd superfan-one
-   \`\`\`
+   ```
 
 2. Install dependencies:
-   \`\`\`bash
+   ```bash
    npm install
    # or
    yarn install
-   \`\`\`
+   ```
 
-3. Run the development server:
-   \`\`\`bash
+3. Set up environment variables:
+   Create a `.env.local` file with the following variables:
+   ```
+   NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id_here
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_INFURA_PROJECT_ID=your_infura_project_id
+   ```
+
+4. Run the development server:
+   ```bash
    npm run dev
    # or
    yarn dev
-   \`\`\`
+   ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
 ## Project Structure
 
-\`\`\`
+```
 superfan-one/
 ├── app/                    # Next.js App Router pages
-│   ├── browse/             # Browse page
-│   ├── dashboard/          # Dashboard pages
-│   ├── deals/              # Deals pages
-│   ├── groups/             # Curators pages
-│   ├── login/              # Authentication pages
-│   ├── settings/           # User settings pages
-│   ├── layout.tsx          # Root layout
-│   └── page.tsx            # Root page
-├── components/             # React components
-│   ├── layout/             # Layout components (header, footer)
-│   ├── ui/                 # UI components (buttons, cards, etc.)
-│   └── protected-route.tsx # Authentication wrapper
-├── contexts/               # React contexts
-│   └── auth-context.tsx    # Authentication context
-├── lib/                    # Utility functions
-│   ├── image-utils.ts      # Image utility functions
-│   └── utils.ts            # General utility functions
-├── public/                 # Static assets
-│   ├── placeholder-avatars/  # Avatar images
-│   ├── placeholder-backgrounds/ # Background images
-│   ├── placeholder-deals/  # Deal images
-│   └── placeholder-groups/ # Curator images
-├── styles/                 # Global styles
-├── .gitignore              # Git ignore file
-├── next.config.js          # Next.js configuration
-├── package.json            # Project dependencies
-├── README.md               # Project documentation
-├── tailwind.config.js      # Tailwind CSS configuration
-└── tsconfig.json           # TypeScript configuration
-\`\`\`
+│   ├── browse/            # Browse page
+│   ├── dashboard/         # Dashboard pages
+│   ├── deals/            # Deals pages
+│   ├── groups/           # Curators pages
+│   ├── login/            # Authentication pages
+│   ├── settings/         # User settings pages
+│   ├── layout.tsx        # Root layout
+│   └── page.tsx          # Root page
+├── components/           # React components
+│   ├── layout/          # Layout components
+│   ├── ui/              # UI components
+│   └── protected-route.tsx
+├── contexts/            # React contexts
+│   ├── auth-context.tsx
+│   └── launch-project-context.tsx
+├── hooks/              # Custom React hooks
+├── lib/               # Utility functions
+├── public/           # Static assets
+├── styles/          # Global styles
+└── types/          # TypeScript type definitions
+```
 
 ## Development Workflow
 
@@ -97,29 +130,29 @@ superfan-one/
 
 This project uses ESLint and Prettier for code formatting. Run the linter with:
 
-\`\`\`bash
+```bash
 npm run lint
 # or
 yarn lint
-\`\`\`
+```
 
 ### Adding New Features
 
 1. Create a new branch for your feature:
-   \`\`\`bash
+   ```bash
    git checkout -b feature/your-feature-name
-   \`\`\`
+   ```
 
 2. Implement your changes and commit them:
-   \`\`\`bash
+   ```bash
    git add .
    git commit -m "Add your feature description"
-   \`\`\`
+   ```
 
 3. Push your branch and create a pull request:
-   \`\`\`bash
+   ```bash
    git push origin feature/your-feature-name
-   \`\`\`
+   ```
 
 ## Deployment
 
@@ -136,43 +169,28 @@ The easiest way to deploy the application is with Vercel:
 
 To build the application for production:
 
-\`\`\`bash
+```bash
 npm run build
 # or
 yarn build
-\`\`\`
+```
 
 Then, start the production server:
 
-\`\`\`bash
+```bash
 npm run start
 # or
 yarn start
-\`\`\`
-
-## Environment Variables
-
-Create a `.env.local` file in the root directory with the following variables:
-
-\`\`\`
-NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id_here
-\`\`\`
-
-## Authentication
-
-For demonstration purposes, this project uses a simplified authentication system with localStorage. In a production environment, you should implement a more secure authentication solution.
-
-## Mock Data
-
-The application currently uses mock data for demonstration purposes. In a production environment, you would connect to a real backend API.
+```
 
 ## Future Enhancements
 
-- Integration with real payment providers
-- Smart contract integration for tokenized investments
-- Real-time notifications
 - Enhanced analytics dashboard
 - Mobile application
+- Additional payment providers
+- Advanced royalty tracking
+- Social features and community engagement
+- Smart contract integration for tokenized investments
 
 ## Contributing
 
@@ -192,3 +210,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [React](https://reactjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [shadcn/ui](https://ui.shadcn.com/)
+- [Privy](https://privy.io/)
+- [Base](https://base.org/)
+- [Supabase](https://supabase.com/)
+- [Coinbase Onramp](https://www.coinbase.com/onramp)
