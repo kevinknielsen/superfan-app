@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
 import ProtectedRoute from "@/components/protected-route";
@@ -13,8 +14,10 @@ import { useAuth } from "@/contexts/auth-context";
 
 function ProjectCard({ project, onDelete, currentUserId }: { project: Project; onDelete: (id: string) => void; currentUserId: string | null }) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation when clicking delete
     if (project.creator_id !== currentUserId) {
       alert("You are not authorized to delete this project.");
       return;
@@ -37,8 +40,17 @@ function ProjectCard({ project, onDelete, currentUserId }: { project: Project; o
     }
   };
 
+  const handleCardClick = () => {
+    if (project.status === "published") {
+      router.push(`/projects/${project.id}`);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+    <div 
+      className="bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+      onClick={handleCardClick}
+    >
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-start lg:items-center">
           {/* Project Image */}
