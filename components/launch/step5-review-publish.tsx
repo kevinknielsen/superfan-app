@@ -48,6 +48,18 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
     [projectData.selectedCurators]
   );
 
+  // Utility function for formatting currency
+  const formatCurrency = (amount: number | null): string => {
+    if (amount === null) return "N/A";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  // Enhanced handlePublish with better error handling
   const handlePublish = async () => {
     setPublishError(null);
     console.log("Privy user object:", user);
@@ -74,25 +86,24 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
         description: errorMsg,
         variant: "destructive",
       });
-      alert(errorMsg);
       return;
     }
 
     setIsLoading(true);
     try {
-      // Fetch team members for the project
       const { data: teamMembers, error: teamError } = await supabase
         .from("team_members")
         .select("wallet_address, revenue_share_pct")
         .eq("project_id", projectData.id);
       if (teamError) throw new Error("Failed to fetch team members: " + teamError.message);
 
-      // Filter for valid wallet addresses
-      const validCollaborators = (teamMembers || []).filter(
-        (member) => /^0x[a-fA-F0-9]{40}$/.test(member.wallet_address)
+      const validCollaborators = (teamMembers || []).filter((member) =>
+        /^0x[a-fA-F0-9]{40}$/.test(member.wallet_address)
       );
       if (validCollaborators.length === 0) {
-        setPublishError("No valid wallet addresses found for collaborators. Please ensure all team members have a wallet address.");
+        setPublishError(
+          "No valid wallet addresses found for collaborators. Please ensure all team members have a wallet address."
+        );
         setIsLoading(false);
         return;
       }
@@ -102,23 +113,21 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
         percent: member.revenue_share_pct,
       }));
 
-      // Create splits contract
       const { splitAddress, txHash } = await createProjectSplit({
         collaborators,
         ownerAddress: embeddedWallet.address,
         wallet: embeddedWallet,
       });
 
-      // Update project with splits contract address
       const { error: updateError } = await supabase
         .from("projects")
-        .update({ 
+        .update({
           status: "published",
           splits_contract_address: splitAddress,
           splits_tx_hash: txHash,
         })
         .eq("id", projectData.id);
-      
+
       if (updateError) throw new Error("Failed to update project status: " + updateError.message);
 
       if (selectedCurators.length > 0) {
@@ -137,7 +146,7 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
 
       router.push(`/launch/success?projectId=${projectData.id}`);
     } catch (error: any) {
-      console.error('Error publishing project:', error);
+      console.error("Error publishing project:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to publish project",
@@ -206,13 +215,15 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
                   <UserAvatar userAddress={split.recipient} />
                   <span>{split.recipient}</span>
                 </div>
-                <span className="text-gray-600">{split.percentage}%</span>
+                <span className="text-gray-600" aria-label={`Royalty split percentage for ${split.recipient}`}>
+                  {split.percentage}%
+                </span>
               </div>
             ))}
             <div className="pt-2 border-t">
               <div className="flex justify-between items-center font-medium">
                 <span>Total</span>
-                <span>{totalPercentage}%</span>
+                <span aria-label="Total royalty split percentage">{totalPercentage}%</span>
               </div>
             </div>
           </div>
@@ -228,12 +239,12 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
           <div className="p-4 space-y-4">
             <div>
               <h4 className="text-sm font-medium text-gray-500">Target Raise</h4>
-              <p className="mt-1">${projectData.targetRaise?.toLocaleString()}</p>
+              <p className="mt-1">{formatCurrency(projectData.targetRaise)}</p>
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-500">Contribution Limits</h4>
               <p className="mt-1">
-                ${projectData.minContribution?.toLocaleString()} - ${projectData.maxContribution?.toLocaleString()}
+                {formatCurrency(projectData.minContribution)} - {formatCurrency(projectData.maxContribution)}
               </p>
             </div>
             <div>
@@ -246,22 +257,21 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
                         : new Date(projectData.financingStartDate)
                       ).toISOString()
                     )
-                  : 'Not set'}
-                - {projectData.financingEndDate
+                  : "Not set"}
+                -{" "}
+                {projectData.financingEndDate
                   ? formatDate(
                       (projectData.financingEndDate instanceof Date
                         ? projectData.financingEndDate
                         : new Date(projectData.financingEndDate)
                       ).toISOString()
                     )
-                  : 'Not set'}
+                  : "Not set"}
               </p>
             </div>
 
             <div>
-              <h4 className="text-sm font-medium text-gray-500 mb-2">
-                Selected Curators ({selectedCurators.length})
-              </h4>
+              <h4 className="text-sm font-medium text-gray-500 mb-2">Selected Curators ({selectedCurators.length})</h4>
               {selectedCurators.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {selectedCurators.map((curator) => (
@@ -277,12 +287,16 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
       )}
 
       <div className="pt-4">
-        <Button onClick={handlePublish} className="w-full bg-[#0f172a] hover:bg-[#1e293b]" disabled={isLoading}>
+        <Button
+          onClick={handlePublish}
+          className="w-full bg-[#0f172a] hover:bg-[#1e293b]"
+          disabled={isLoading}
+          aria-busy={isLoading}
+          aria-label="Publish project"
+        >
           {isLoading ? "Publishing..." : "Publish Project"}
         </Button>
-        {publishError && (
-          <p className="text-center text-red-500 mt-2">{publishError}</p>
-        )}
+        {publishError && <p className="text-center text-red-500 mt-2">{publishError}</p>}
         <p className="text-center text-sm text-gray-500 mt-2">
           By publishing, you agree to our Terms of Service and Privacy Policy
         </p>

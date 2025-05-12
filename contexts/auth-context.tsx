@@ -17,7 +17,6 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: () => Promise<void>;
-  signup: () => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -31,10 +30,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { login: privyLogin, logout: privyLogout, authenticated, user: privyUser } = usePrivy();
   const { wallets } = useWallets();
 
-  useEffect(() => {
+  // Modularized user state setup logic
+  const setupUserState = (authenticated: boolean, privyUser: any, wallets: any[]): User | null => {
     if (authenticated && privyUser) {
       const wallet_address = wallets[0]?.address || undefined;
-      const userData: User = {
+      return {
         id: privyUser.id,
         name: privyUser.email?.address || "Anonymous",
         email: privyUser.email?.address || "",
@@ -42,12 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar: "/placeholder-avatars/avatar-1.png",
         wallet_address,
       };
-      setUser(userData);
-      setIsAuthenticated(true);
-    } else {
-      setUser(null);
-      setIsAuthenticated(false);
     }
+    return null;
+  };
+
+  // Updated useEffect to use modularized logic
+  useEffect(() => {
+    const userData = setupUserState(authenticated, privyUser, wallets);
+    setUser(userData);
+    setIsAuthenticated(!!userData);
     setIsLoading(false);
   }, [authenticated, privyUser, wallets]);
 
@@ -57,35 +60,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await privyLogin();
     } catch (error) {
       console.error("Login failed:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signup = async () => {
-    setIsLoading(true);
-    try {
-      await privyLogin();
-    } catch (error) {
-      console.error("Signup failed:", error);
-      throw error;
+      throw new Error("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = async () => {
-    privyLogout();
-    setUser(null);
-    setIsAuthenticated(false);
-    return Promise.resolve();
+    try {
+      await privyLogout();
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      throw new Error("Logout failed. Please try again.");
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated, login, signup, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated, login, logout }}>{children}</AuthContext.Provider>
   );
 }
 

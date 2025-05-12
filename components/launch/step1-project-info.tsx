@@ -58,6 +58,7 @@ function FileUpload({
                 type="button"
                 onClick={onRemove}
                 className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md"
+                aria-label="Remove uploaded file"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -142,6 +143,14 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 20 * 1024 * 1024) {
+        setErrors((prev) => ({
+          ...prev,
+          artwork: "File size must be less than 20MB",
+        }));
+        return;
+      }
+
       // Use the utility function to create a sanitized file
       const sanitizedFile = createSanitizedFile(file);
 
@@ -450,7 +459,7 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
           creator_id: user.id,
           status: "draft",
           platform_fee_pct: 2.5,
-          early_curator_shares: false
+          early_curator_shares: false,
         });
 
         const { data, error } = await supabase
@@ -465,7 +474,7 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
             creator_id: user.id,
             status: "draft",
             platform_fee_pct: 2.5,
-            early_curator_shares: false
+            early_curator_shares: false,
           })
           .select("id");
 
@@ -490,7 +499,10 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
         onNext();
       } catch (error: any) {
         console.error("Unexpected error during project creation:", error);
-        setErrors((prev) => ({ ...prev, submit: "An unexpected error occurred: " + (error.message || "Unknown error") }));
+        setErrors((prev) => ({
+          ...prev,
+          submit: "An unexpected error occurred: " + (error.message || "Unknown error"),
+        }));
       }
     }
   };
@@ -641,7 +653,9 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                 </div>
                 {/* Progress Slider */}
                 <div className="w-full flex items-center gap-2">
-                  <span className="text-xs text-gray-500">{formatTime(currentTime)}</span>
+                  <span className="text-xs text-gray-500" aria-live="polite">
+                    {formatTime(currentTime)}
+                  </span>
                   <input
                     type="range"
                     min="0"
@@ -649,8 +663,14 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                     value={currentTime}
                     onChange={handleSliderChange}
                     className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#0f172a]"
+                    aria-valuemin={0}
+                    aria-valuemax={duration}
+                    aria-valuenow={currentTime}
+                    aria-label="Audio progress slider"
                   />
-                  <span className="text-xs text-gray-500">{formatTime(duration)}</span>
+                  <span className="text-xs text-gray-500" aria-live="polite">
+                    {formatTime(duration)}
+                  </span>
                 </div>
                 <audio ref={audioRef} src={projectData.trackDemoPreview} className="hidden" />
               </div>

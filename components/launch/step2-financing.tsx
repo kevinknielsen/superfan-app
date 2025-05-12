@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent, useMemo, useCallback } from "react";
+import React, { useState, type ChangeEvent, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,11 @@ interface Step4Props {
   isLastStep: boolean;
 }
 
+// Added utility function for date validation
+function isEndDateAfterStartDate(startDate: Date | null, endDate: Date | null): boolean {
+  return !!(startDate && endDate && new Date(endDate) > new Date(startDate));
+}
+
 function validateFinancingForm(projectData: ProjectData) {
   const errors: Record<string, string> = {};
 
@@ -34,22 +39,27 @@ function validateFinancingForm(projectData: ProjectData) {
 
   if (!projectData.financingEndDate) {
     errors.financingEndDate = "End date is required";
-  } else if (projectData.financingStartDate && new Date(projectData.financingEndDate) <= new Date(projectData.financingStartDate)) {
+  } else if (!isEndDateAfterStartDate(projectData.financingStartDate, projectData.financingEndDate)) {
     errors.financingEndDate = "End date must be after start date";
   }
 
   return errors;
 }
 
-function CuratorCard({ curator, onClick }: { curator: Curator; onClick: (id: string) => void }) {
+// Optimized rendering of CuratorCard list with React.memo
+const CuratorCard = React.memo(({ curator, onClick }: { curator: Curator; onClick: (id: string) => void }) => {
   return (
     <button
       onClick={() => onClick(curator.id)}
       className={`flex items-center p-4 rounded-lg border transition-all cursor-pointer w-full
-        ${curator.selected
-          ? "border-[#a259ff] bg-white text-[#0f172a] shadow-md"
-          : "border border-gray-200 bg-white text-gray-800 hover:border-[#a259ff] hover:bg-purple-50"}
+        ${
+          curator.selected
+            ? "border-[#a259ff] bg-white text-[#0f172a] shadow-md"
+            : "border border-gray-200 bg-white text-gray-800 hover:border-[#a259ff] hover:bg-purple-50"
+        }
       `}
+      aria-pressed={curator.selected}
+      role="checkbox"
     >
       <div className="flex items-center space-x-3 flex-1">
         <UserAvatar src={curator.avatar || "/placeholder-user.jpg"} name={curator.name} size={40} />
@@ -57,16 +67,14 @@ function CuratorCard({ curator, onClick }: { curator: Curator; onClick: (id: str
       </div>
       <div
         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-          ${curator.selected
-            ? "border-white bg-white text-[#a259ff]"
-            : "border-gray-300 bg-white"}
+          ${curator.selected ? "border-white bg-white text-[#a259ff]" : "border-gray-300 bg-white"}
         `}
       >
         {curator.selected && <Check className="w-4 h-4" />}
       </div>
     </button>
   );
-}
+});
 
 export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
   const { projectData, updateField, toggleCurator } = useLaunchProject();
@@ -150,7 +158,11 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
       if (!projectData.financingEndDate) {
         newErrors.financingEndDate = "Please select an end date";
       }
-      if (projectData.financingStartDate && projectData.financingEndDate && projectData.financingStartDate > projectData.financingEndDate) {
+      if (
+        projectData.financingStartDate &&
+        projectData.financingEndDate &&
+        projectData.financingStartDate > projectData.financingEndDate
+      ) {
         newErrors.financingEndDate = "End date must be after start date";
       }
     }
@@ -170,9 +182,7 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold mb-4">Financing</h2>
-        <p className="text-gray-600 mb-6">
-          Do you want to raise funds for your project?
-        </p>
+        <p className="text-gray-600 mb-6">Do you want to raise funds for your project?</p>
       </div>
 
       <div className="space-y-4">
@@ -184,9 +194,7 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
                 <TooltipTrigger>
                   <InformationCircleIcon className="h-5 w-5 text-gray-400" />
                 </TooltipTrigger>
-                <TooltipContent>
-                  Enable financing to allow fans to invest in your project
-                </TooltipContent>
+                <TooltipContent>Enable financing to allow fans to invest in your project</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -220,6 +228,14 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
             <div>
               <Label htmlFor="targetRaise" className={errors.targetRaise ? "text-red-500" : ""}>
                 Target Raise (USDC)
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <InformationCircleIcon className="h-5 w-5 text-gray-400 ml-2" />
+                    </TooltipTrigger>
+                    <TooltipContent>Enter the total amount you aim to raise for this project in USDC.</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </Label>
               <Input
                 id="targetRaise"
@@ -231,8 +247,14 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
                 value={projectData.targetRaise === null ? "" : projectData.targetRaise}
                 onChange={handleChange}
                 className={errors.targetRaise ? "border-red-500" : ""}
+                aria-invalid={!!errors.targetRaise}
+                aria-describedby="targetRaiseError"
               />
-              {errors.targetRaise && <p className="text-red-500 text-sm mt-1">{errors.targetRaise}</p>}
+              {errors.targetRaise && (
+                <p id="targetRaiseError" className="text-red-500 text-sm mt-1">
+                  {errors.targetRaise}
+                </p>
+              )}
               <p className="text-gray-500 text-sm mt-1">Total amount you aim to raise for this project</p>
             </div>
 
@@ -247,9 +269,13 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
                   maxDate={projectData.financingEndDate || undefined}
                   placeholderText="Select start date"
                   className="w-full"
+                  aria-invalid={!!errors.financingStartDate}
+                  aria-describedby="startDateError"
                 />
                 {errors.financingStartDate && (
-                  <p className="text-sm text-red-500">{errors.financingStartDate}</p>
+                  <p id="startDateError" className="text-sm text-red-500">
+                    {errors.financingStartDate}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
@@ -261,9 +287,13 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
                   minDate={projectData.financingStartDate || new Date()}
                   placeholderText="Select end date"
                   className="w-full"
+                  aria-invalid={!!errors.financingEndDate}
+                  aria-describedby="endDateError"
                 />
                 {errors.financingEndDate && (
-                  <p className="text-sm text-red-500">{errors.financingEndDate}</p>
+                  <p id="endDateError" className="text-sm text-red-500">
+                    {errors.financingEndDate}
+                  </p>
                 )}
               </div>
             </div>
