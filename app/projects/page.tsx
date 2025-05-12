@@ -96,39 +96,38 @@ export default function ProjectsPage() {
       // Fetch related data
       const supabase = createClient();
       const [
-        { data: royaltySplits, error: splitsError },
         { data: milestones, error: milestonesError },
         { data: financing, error: financingError },
         { data: collaborators, error: collaboratorsError },
       ] = await Promise.all([
-        supabase.from("royalty_splits").select().eq("project_id", project.id),
         supabase.from("milestones").select().eq("project_id", project.id),
-        supabase.from("financing").select().eq("project_id", project.id).single(),
+        supabase.from("financing").select().eq("project_id", project.id),
         supabase.from("team_members").select().eq("project_id", project.id),
       ]);
 
       // Error handling
-      if (splitsError || milestonesError || financingError || collaboratorsError) {
+      if (milestonesError || financingError || collaboratorsError) {
         throw new Error("Failed to load project details");
       }
 
-      // Process data
-      const processedRoyaltySplits =
-        royaltySplits && royaltySplits.length > 0
-          ? royaltySplits
-          : (collaborators || [])
-              .filter((c) => c.revenue_share_pct > 0)
-              .map((c) => ({
-                id: c.id,
-                recipient: c.name,
-                percentage: c.revenue_share_pct,
-              }));
+      // Process financing data
+      const financingData =
+        financing && financing.length > 0 ? financing[0] : { message: "No financing data available" };
+
+      // Process collaborators data
+      const processedRoyaltySplits = (collaborators || [])
+        .filter((c) => c.revenue_share_pct > 0)
+        .map((c) => ({
+          id: c.id,
+          recipient: c.name,
+          percentage: c.revenue_share_pct,
+        }));
 
       setModalData({
         project,
         royaltySplits: processedRoyaltySplits,
         milestones: milestones || [],
-        financing: financing || {},
+        financing: financingData,
         collaborators: collaborators || [],
       });
     } catch (err) {
