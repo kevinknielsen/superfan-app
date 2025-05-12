@@ -350,7 +350,7 @@ const CollaboratorCard = memo(function CollaboratorCard({
                   htmlFor="wallet"
                   className={`text-xs ${error?.walletAddress ? "text-red-500" : "text-gray-500"}`}
                 >
-                  Wallet (Optional)
+                  Wallet Address
                 </Label>
                 <Input
                   id="wallet"
@@ -966,7 +966,10 @@ export default function Step3RoyaltySplits({ onNext, onPrevious }: Step2Props) {
         isValid = false;
       }
 
-      if (collab.walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(collab.walletAddress)) {
+      if (!collab.walletAddress.trim()) {
+        collabErrors.walletAddress = "Wallet address is required";
+        isValid = false;
+      } else if (!/^0x[a-fA-F0-9]{40}$/.test(collab.walletAddress)) {
         collabErrors.walletAddress = "Invalid wallet address";
         isValid = false;
       }

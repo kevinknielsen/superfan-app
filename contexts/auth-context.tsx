@@ -33,12 +33,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (authenticated && privyUser) {
+      const wallet_address = wallets[0]?.address || undefined;
       const userData: User = {
         id: privyUser.id,
         name: privyUser.email?.address || "Anonymous",
         email: privyUser.email?.address || "",
         walletBalance: 0,
         avatar: "/placeholder-avatars/avatar-1.png",
+        wallet_address,
       };
       setUser(userData);
       setIsAuthenticated(true);
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(false);
     }
     setIsLoading(false);
-  }, [authenticated, privyUser]);
+  }, [authenticated, privyUser, wallets]);
 
   const login = async () => {
     setIsLoading(true);

@@ -32,7 +32,8 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, login } = useAuth();
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const totalPercentage = useMemo(
     () => projectData.royaltySplits.reduce((sum, split) => sum + split.percentage, 0),
@@ -45,24 +46,73 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
   );
 
   const handlePublish = async () => {
-    if (!projectData.id || !user?.wallet_address) {
+    setPublishError(null);
+    console.log("Privy user object:", user);
+
+    if (!user) {
+      try {
+        await login();
+      } catch (e) {
+        setPublishError("Wallet connection was cancelled or failed.");
+        return;
+      }
+    }
+
+    let walletAddress = user?.wallet_address;
+    if (!walletAddress) {
+      try {
+        await login();
+      } catch (e) {
+        setPublishError("Wallet connection was cancelled or failed.");
+        return;
+      }
+      walletAddress = user?.wallet_address;
+      if (!walletAddress) {
+        setPublishError("No wallet found. Please log in again or contact support.");
+        return;
+      }
+    }
+
+    if (!projectData.id) {
+      const errorMsg = "Project ID missing. Please complete all steps.";
+      setPublishError(errorMsg);
       toast({
         title: "Error",
-        description: "Please connect your wallet to publish the project",
+        description: errorMsg,
         variant: "destructive",
       });
+      alert(errorMsg);
       return;
     }
 
     setIsLoading(true);
     try {
+      // Fetch team members for the project
+      const { data: teamMembers, error: teamError } = await supabase
+        .from("team_members")
+        .select("wallet_address, revenue_share_pct")
+        .eq("project_id", projectData.id);
+      if (teamError) throw new Error("Failed to fetch team members: " + teamError.message);
+
+      // Filter for valid wallet addresses
+      const validCollaborators = (teamMembers || []).filter(
+        (member) => /^0x[a-fA-F0-9]{40}$/.test(member.wallet_address)
+      );
+      if (validCollaborators.length === 0) {
+        setPublishError("No valid wallet addresses found for collaborators. Please ensure all team members have a wallet address.");
+        setIsLoading(false);
+        return;
+      }
+
+      const collaborators = validCollaborators.map((member) => ({
+        address: member.wallet_address,
+        percent: member.revenue_share_pct,
+      }));
+
       // Create splits contract
       const { splitAddress, txHash } = await createProjectSplit({
-        collaborators: projectData.royaltySplits.map(split => ({
-          address: split.recipient,
-          percent: split.percentage,
-        })),
-        ownerAddress: user.wallet_address,
+        collaborators,
+        ownerAddress: walletAddress,
       });
 
       // Update project with splits contract address
@@ -195,7 +245,22 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
             <div>
               <h4 className="text-sm font-medium text-gray-500">Financing Period</h4>
               <p className="mt-1">
-                {projectData.financingStartDate ? formatDate(projectData.financingStartDate.toISOString()) : 'Not set'} - {projectData.financingEndDate ? formatDate(projectData.financingEndDate.toISOString()) : 'Not set'}
+                {projectData.financingStartDate
+                  ? formatDate(
+                      (projectData.financingStartDate instanceof Date
+                        ? projectData.financingStartDate
+                        : new Date(projectData.financingStartDate)
+                      ).toISOString()
+                    )
+                  : 'Not set'}
+                - {projectData.financingEndDate
+                  ? formatDate(
+                      (projectData.financingEndDate instanceof Date
+                        ? projectData.financingEndDate
+                        : new Date(projectData.financingEndDate)
+                      ).toISOString()
+                    )
+                  : 'Not set'}
               </p>
             </div>
 
@@ -221,6 +286,9 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
         <Button onClick={handlePublish} className="w-full bg-[#0f172a] hover:bg-[#1e293b]" disabled={isLoading}>
           {isLoading ? "Publishing..." : "Publish Project"}
         </Button>
+        {publishError && (
+          <p className="text-center text-red-500 mt-2">{publishError}</p>
+        )}
         <p className="text-center text-sm text-gray-500 mt-2">
           By publishing, you agree to our Terms of Service and Privacy Policy
         </p>

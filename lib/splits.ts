@@ -18,6 +18,13 @@ interface CreateProjectSplitParams {
 
 export async function createProjectSplit({ collaborators, ownerAddress }: CreateProjectSplitParams) {
   try {
+    // Request account access from the wallet
+    let account = ownerAddress;
+    if (typeof window !== 'undefined' && window.ethereum) {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      account = accounts[0];
+    }
+
     // Initialize viem clients
     const publicClient = createPublicClient({
       chain: base,
@@ -27,7 +34,7 @@ export async function createProjectSplit({ collaborators, ownerAddress }: Create
     const walletClient = createWalletClient({
       chain: base,
       transport: custom(window.ethereum),
-      account: ownerAddress as `0x${string}`,
+      account: account as `0x${string}`,
     });
 
     const splitsClient = new SplitV2Client({
@@ -48,12 +55,15 @@ export async function createProjectSplit({ collaborators, ownerAddress }: Create
       })),
     ];
 
+    // Calculate the total allocation percent
+    const totalAllocationPercent = allRecipients.reduce((sum, r) => sum + r.percentAllocation, 0);
+
     // Create split
     const tx = await splitsClient.createSplit({
       recipients: allRecipients,
       distributorFeePercent: 0,
-      ownerAddress: ownerAddress as `0x${string}`,
-      totalAllocationPercent: 100,
+      ownerAddress: account as `0x${string}`,
+      totalAllocationPercent,
     });
 
     return {
