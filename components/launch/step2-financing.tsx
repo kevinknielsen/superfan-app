@@ -201,12 +201,9 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
                 updateField("financingEndDate", null);
               }
             }}
-            disabled={!projectData.enableEarlySupporters}
             className={`${
               projectData.enableFinancing ? "bg-indigo-600" : "bg-gray-200"
-            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-              !projectData.enableEarlySupporters ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
           >
             <span
               className={`${
@@ -215,11 +212,6 @@ export default function Step2Financing({ onNext, onPrevious }: Step4Props) {
             />
           </Switch>
         </div>
-        {!projectData.enableEarlySupporters && (
-          <p className="text-sm text-gray-500">
-            You must enable Early Supporters in Step 2 to use financing.
-          </p>
-        )}
       </div>
 
       {projectData.enableFinancing ? (
