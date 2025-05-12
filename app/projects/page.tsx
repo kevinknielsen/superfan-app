@@ -10,9 +10,68 @@ import { Project } from "@/types/supabase";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ProjectReviewDetails } from "@/components/projects/project-review-details";
 import { useAuth } from "@/contexts/auth-context";
+import { useSplitEarnings } from '@0xsplits/splits-sdk-react';
+import { useWallets } from '@privy-io/react-auth';
+import { ethers } from 'ethers';
+// import { SplitEarningsCard } from '@0xsplits/splitskit'; // Uncomment if you want to use SplitsKit UI
 
 function ProjectCard({ project, onDelete, currentUserId }: { project: Project; onDelete: (id: string) => void; currentUserId: string | null }) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showInvest, setShowInvest] = useState(false);
+  const [investAmount, setInvestAmount] = useState("");
+  const [investStatus, setInvestStatus] = useState<null | 'loading' | 'success' | 'error'>(null);
+  const [investError, setInvestError] = useState<string | null>(null);
+  const [fallbackBalance, setFallbackBalance] = useState<number | null>(null);
+  // Log the split address for debugging
+  console.log('Split address for project', project.id, project.splits_contract_address);
+  // For debugging: hardcode a known indexed split address
+  // const splitAddress = "0x9A4B144c512B9ed3d79F8698cBd915bf95EC483b";
+  const splitAddress = project.splits_contract_address || "";
+  const { data: splitEarnings, isLoading: balanceLoading } = useSplitEarnings(
+    8453,
+    splitAddress,
+    { erc20TokenList: ['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'] }
+  );
+  // Debug: log all active balances
+  console.log('Active Balances for project', project.id, splitEarnings?.activeBalances);
+  const usdcTokenAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
+  const usdcBalanceObj = Array.isArray(splitEarnings?.activeBalances)
+    ? splitEarnings.activeBalances.find((b: any) => b?.token?.toLowerCase() === usdcTokenAddress)
+    : undefined;
+  let usdcBalance = usdcBalanceObj
+    ? Number(usdcBalanceObj.rawAmount) / 1e6
+    : null;
+
+  // Fallback: fetch on-chain if SDK returns null/undefined
+  useEffect(() => {
+    async function fetchOnChainBalance() {
+      if (!splitAddress || usdcBalance !== null) return;
+      try {
+        const { ethers } = await import('ethers');
+        const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+        const usdc = new ethers.Contract(
+          '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+          ["function balanceOf(address owner) view returns (uint256)", "function decimals() view returns (uint8)"],
+          provider
+        );
+        const [raw, decimals] = await Promise.all([
+          usdc.balanceOf(splitAddress),
+          usdc.decimals(),
+        ]);
+        setFallbackBalance(Number(raw.toString()) / 10 ** Number(decimals));
+      } catch (e) {
+        setFallbackBalance(0);
+      }
+    }
+    fetchOnChainBalance();
+  }, [splitAddress, usdcBalance]);
+
+  if (usdcBalance === null && fallbackBalance !== null) {
+    usdcBalance = fallbackBalance;
+  }
+
+  const { wallets } = useWallets();
+  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
 
   const handleDelete = async () => {
     if (project.creator_id !== currentUserId) {
@@ -34,6 +93,39 @@ function ProjectCard({ project, onDelete, currentUserId }: { project: Project; o
       } finally {
         setIsDeleting(false);
       }
+    }
+  };
+
+  const handleInvest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInvestStatus('loading');
+    setInvestError(null);
+    try {
+      if (!embeddedWallet) throw new Error("No Privy wallet connected");
+      if (!splitAddress) throw new Error("No split contract address");
+      if (!investAmount || isNaN(Number(investAmount)) || Number(investAmount) <= 0) throw new Error("Enter a valid amount");
+      const provider = new ethers.BrowserProvider(await embeddedWallet.getEthereumProvider());
+      const network = await provider.getNetwork();
+      // @ts-ignore
+      if (Number(network.chainId) !== 8453) {
+        // Prompt user to switch to Base
+        await provider.send('wallet_switchEthereumChain', [{ chainId: '0x2105' }]);
+      }
+      const signer = await provider.getSigner();
+      const usdc = new ethers.Contract(
+        '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        ["function transfer(address to, uint256 amount) public returns (bool)", "function decimals() view returns (uint8)"],
+        signer
+      );
+      const decimals = await usdc.decimals();
+      const amountInWei = ethers.parseUnits(investAmount, decimals);
+      const tx = await usdc.transfer(splitAddress, amountInWei);
+      await tx.wait();
+      setInvestStatus('success');
+      setInvestAmount("");
+    } catch (err: any) {
+      setInvestStatus('error');
+      setInvestError(err?.message || "Transaction failed");
     }
   };
 
@@ -83,15 +175,75 @@ function ProjectCard({ project, onDelete, currentUserId }: { project: Project; o
                 <span className="text-gray-500">Created:</span>
                 <span className="ml-2 font-medium">{new Date(project.created_at).toLocaleDateString()}</span>
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                disabled={isDeleting || project.creator_id !== currentUserId}
-                className="w-full mt-2"
-              >
-                {isDeleting ? "Deleting..." : "Delete Project"}
-              </Button>
+              <div className="text-sm">
+                <span className="text-gray-500">Amount Raised:</span>
+                <span className="ml-2 font-medium">
+                  {balanceLoading ? "Loading..." : `${usdcBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 0} USDC`}
+                </span>
+              </div>
+              {project.splits_contract_address && (
+                <div className="text-sm">
+                  <span className="text-gray-500">Split Contract:</span>
+                  <a
+                    href={`https://basescan.org/address/${project.splits_contract_address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-blue-600 hover:underline"
+                  >
+                    View on Basescan
+                  </a>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setShowInvest(true);
+                  }}
+                  className="w-full"
+                >
+                  Invest
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={isDeleting || project.creator_id !== currentUserId}
+                  className="w-full"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Project"}
+                </Button>
+              </div>
+              {/* Invest Modal */}
+              {showInvest && (
+                <Dialog open={showInvest} onOpenChange={setShowInvest}>
+                  <DialogContent className="max-w-sm" onClick={e => e.stopPropagation()}>
+                    <DialogTitle>Invest in Project</DialogTitle>
+                    <form onSubmit={handleInvest} className="space-y-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Amount (USDC)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={investAmount}
+                          onChange={e => setInvestAmount(e.target.value)}
+                          className="w-full border rounded px-3 py-2"
+                          placeholder="Enter amount"
+                          required
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={investStatus === 'loading'}>
+                        {investStatus === 'loading' ? 'Processing...' : 'Send USDC'}
+                      </Button>
+                      {investStatus === 'success' && <div className="text-green-600 text-sm">Investment successful!</div>}
+                      {investStatus === 'error' && <div className="text-red-600 text-sm">{investError}</div>}
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
         </div>

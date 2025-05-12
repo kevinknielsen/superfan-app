@@ -1,6 +1,7 @@
 import { SplitV2Client } from '@0xsplits/splits-sdk';
 import { createPublicClient, createWalletClient, custom, http } from 'viem';
 import { base } from 'viem/chains';
+import { ConnectedWallet } from '@privy-io/react-auth';
 
 // Platform wallet address
 const PLATFORM_WALLET = '0x8e1f13A08012F34dc8750eE34B78e90B5616f194';
@@ -14,15 +15,55 @@ interface Collaborator {
 interface CreateProjectSplitParams {
   collaborators: Collaborator[];
   ownerAddress: string;
+  wallet: ConnectedWallet;
 }
 
-export async function createProjectSplit({ collaborators, ownerAddress }: CreateProjectSplitParams) {
+export async function createProjectSplit({ collaborators, ownerAddress, wallet }: CreateProjectSplitParams) {
   try {
-    // Request account access from the wallet
-    let account = ownerAddress;
-    if (typeof window !== 'undefined' && window.ethereum) {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      account = accounts[0];
+    if (!wallet) {
+      throw new Error("No wallet provided. Please connect your wallet first.");
+    }
+
+    // Get the provider
+    const provider = await wallet.getEthereumProvider();
+    
+    // Check current chain
+    const currentChainId = await provider.request({ method: 'eth_chainId' });
+    
+    // If not on Base, switch to it
+    if (currentChainId !== `0x${base.id.toString(16)}`) {
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: `0x${base.id.toString(16)}` }],
+        });
+      } catch (switchError: any) {
+        // This error code indicates that the chain has not been added to MetaMask
+        if (switchError.code === 4902) {
+          try {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: `0x${base.id.toString(16)}`,
+                  chainName: 'Base',
+                  nativeCurrency: {
+                    name: 'ETH',
+                    symbol: 'ETH',
+                    decimals: 18,
+                  },
+                  rpcUrls: ['https://mainnet.base.org'],
+                  blockExplorerUrls: ['https://basescan.org'],
+                },
+              ],
+            });
+          } catch (addError) {
+            throw new Error('Failed to add Base network to wallet');
+          }
+        } else {
+          throw new Error('Failed to switch to Base network');
+        }
+      }
     }
 
     // Initialize viem clients
@@ -33,8 +74,8 @@ export async function createProjectSplit({ collaborators, ownerAddress }: Create
 
     const walletClient = createWalletClient({
       chain: base,
-      transport: custom(window.ethereum),
-      account: account as `0x${string}`,
+      transport: custom(provider),
+      account: wallet.address as `0x${string}`,
     });
 
     const splitsClient = new SplitV2Client({
@@ -62,7 +103,7 @@ export async function createProjectSplit({ collaborators, ownerAddress }: Create
     const tx = await splitsClient.createSplit({
       recipients: allRecipients,
       distributorFeePercent: 0,
-      ownerAddress: account as `0x${string}`,
+      ownerAddress: wallet.address as `0x${string}`,
       totalAllocationPercent,
     });
 

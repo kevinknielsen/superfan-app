@@ -10,6 +10,7 @@ import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { createProjectSplit } from "@/lib/splits";
 import { useAuth } from "@/contexts/auth-context";
+import { useWallets } from "@privy-io/react-auth";
 
 interface Step5Props {
   onNext: () => void;
@@ -34,6 +35,8 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
   const [isLoading, setIsLoading] = useState(false);
   const { user, login } = useAuth();
   const [publishError, setPublishError] = useState<string | null>(null);
+  const { wallets } = useWallets();
+  const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === "privy");
 
   const totalPercentage = useMemo(
     () => projectData.royaltySplits.reduce((sum, split) => sum + split.percentage, 0),
@@ -58,19 +61,9 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
       }
     }
 
-    let walletAddress = user?.wallet_address;
-    if (!walletAddress) {
-      try {
-        await login();
-      } catch (e) {
-        setPublishError("Wallet connection was cancelled or failed.");
-        return;
-      }
-      walletAddress = user?.wallet_address;
-      if (!walletAddress) {
-        setPublishError("No wallet found. Please log in again or contact support.");
-        return;
-      }
+    if (!embeddedWallet) {
+      setPublishError("No Privy wallet found. Please connect your wallet first.");
+      return;
     }
 
     if (!projectData.id) {
@@ -112,7 +105,8 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
       // Create splits contract
       const { splitAddress, txHash } = await createProjectSplit({
         collaborators,
-        ownerAddress: walletAddress,
+        ownerAddress: embeddedWallet.address,
+        wallet: embeddedWallet,
       });
 
       // Update project with splits contract address
