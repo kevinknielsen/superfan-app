@@ -14,6 +14,8 @@ import { ethers } from "ethers"
 import { base } from 'viem/chains'
 import { useWalletBalance } from "@/hooks/use-wallet-balance"
 import { FundModal } from "@/components/ui/fund-modal"
+import { SplitV2Client } from '@0xsplits/splits-sdk'
+import { createWalletClient, custom, createPublicClient, http } from 'viem'
 
 // USDC contract ABI - only including the functions we need
 const USDC_ABI = [
@@ -33,6 +35,10 @@ export default function WalletPage() {
   const { toast } = useToast()
   const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === "privy")
   const { fundWallet } = useFundWallet()
+
+  // Claim state
+  const [claimStatus, setClaimStatus] = useState<null | 'loading' | 'success' | 'error'>(null)
+  const [claimError, setClaimError] = useState<string | null>(null)
 
   const handleWithdraw = async () => {
     if (!embeddedWallet) {
@@ -66,6 +72,56 @@ export default function WalletPage() {
         chain: base,
         // asset: 'USDC', // Optional: or 'native-currency'
         // amount: '25',  // Optional: string, or leave undefined for dashboard default
+      });
+    }
+  };
+
+  const handleClaim = async () => {
+    if (!embeddedWallet?.address) {
+      toast({
+        title: "Error",
+        description: "No wallet connected",
+        variant: "destructive",
+      });
+      return;
+    }
+    setClaimStatus('loading');
+    setClaimError(null);
+    try {
+      // viem public client for Base
+      const publicClient = createPublicClient({
+        chain: base,
+        transport: http(),
+      });
+      // viem wallet client from Privy
+      const viemWalletClient = createWalletClient({
+        account: embeddedWallet.address as `0x${string}`,
+        chain: base,
+        transport: custom(await embeddedWallet.getEthereumProvider()),
+      });
+      // Splits SDK client
+      const splitsClient = new SplitV2Client({
+        chainId: 8453,
+        walletClient: viemWalletClient,
+        publicClient,
+      });
+      // Withdraw USDC for this wallet
+      await splitsClient.withdraw({
+        accountAddress: embeddedWallet.address as `0x${string}`,
+        tokens: [USDC_CONTRACT_ADDRESS as `0x${string}`],
+      });
+      setClaimStatus('success');
+      toast({
+        title: "Success",
+        description: "Claim transaction sent!",
+      });
+    } catch (err: any) {
+      setClaimStatus('error');
+      setClaimError(err?.message || 'Claim failed');
+      toast({
+        title: "Error",
+        description: err?.message || 'Claim failed',
+        variant: "destructive",
       });
     }
   };
@@ -118,21 +174,25 @@ export default function WalletPage() {
         <SignMessage />
       </div> */}
 
-      {/* Claims from investment */}
+      {/* Claims section */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Claims from investment</h2>
-          <span className="bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">0</span>
+          <h2 className="text-xl font-semibold">Claims</h2>
+          {/* You can show a count of claims if available */}
         </div>
         <div className="flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <LinkIcon className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">No claims available</h3>
-          <p className="text-gray-600 max-w-md">
-            If you made investments in tokens, locked and claimable assets will appear here after the token has been
-            dispersed.
+          <h3 className="text-xl font-semibold mb-2">Claim your funds</h3>
+          <p className="text-gray-600 max-w-md mb-4">
+            If you have claimable USDC from investments, you can withdraw it to your wallet here.
           </p>
+          <Button onClick={handleClaim} disabled={claimStatus === 'loading' || !embeddedWallet?.address}>
+            {claimStatus === 'loading' ? 'Claiming...' : 'Claim'}
+          </Button>
+          {claimStatus === 'success' && <div className="text-green-600 text-sm mt-2">Claim transaction sent!</div>}
+          {claimStatus === 'error' && <div className="text-red-600 text-sm mt-2">{claimError}</div>}
         </div>
       </div>
 
@@ -151,7 +211,6 @@ export default function WalletPage() {
           isOpen={isFundModalOpen}
           onClose={() => setIsFundModalOpen(false)}
           walletAddress={embeddedWallet.address}
-          onFund={handleFund}
         />
       )}
     </>
