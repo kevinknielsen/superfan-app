@@ -8,9 +8,10 @@ interface UserAvatarProps {
   size?: number;
   className?: string;
   alt?: string;
+  userAddress?: string;
 }
 
-export function UserAvatar({ src, name, size = 40, className = "" }: UserAvatarProps) {
+export function UserAvatar({ src, name, size = 40, className = "", userAddress }: UserAvatarProps) {
   const initials = name ? getInitials(name) : "";
 
   if (src) {

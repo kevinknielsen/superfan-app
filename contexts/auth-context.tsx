@@ -9,6 +9,7 @@ type User = {
   email: string;
   avatar?: string;
   walletBalance?: number;
+  wallet_address?: string;
 };
 
 type AuthContextType = {
