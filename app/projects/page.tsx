@@ -10,9 +10,11 @@ import { Project } from "@/types/supabase";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ProjectReviewDetails } from "@/components/projects/project-review-details";
 import { useAuth } from "@/contexts/auth-context";
-import { useSplitEarnings } from '@0xsplits/splits-sdk-react';
 import { useWallets } from '@privy-io/react-auth';
 import { ethers } from 'ethers';
+import { SplitV2Client } from '@0xsplits/splits-sdk';
+import { createWalletClient, custom, createPublicClient, http } from 'viem';
+import { base } from 'viem/chains';
 // import { SplitEarningsCard } from '@0xsplits/splitskit'; // Uncomment if you want to use SplitsKit UI
 
 function ProjectCard({ project, onDelete, currentUserId }: { project: Project; onDelete: (id: string) => void; currentUserId: string | null }) {
@@ -22,30 +24,20 @@ function ProjectCard({ project, onDelete, currentUserId }: { project: Project; o
   const [investStatus, setInvestStatus] = useState<null | 'loading' | 'success' | 'error'>(null);
   const [investError, setInvestError] = useState<string | null>(null);
   const [fallbackBalance, setFallbackBalance] = useState<number | null>(null);
+  const [distributeStatus, setDistributeStatus] = useState<null | 'loading' | 'success' | 'error'>(null);
+  const [distributeError, setDistributeError] = useState<string | null>(null);
   // Log the split address for debugging
   console.log('Split address for project', project.id, project.splits_contract_address);
   // For debugging: hardcode a known indexed split address
   // const splitAddress = "0x9A4B144c512B9ed3d79F8698cBd915bf95EC483b";
   const splitAddress = project.splits_contract_address || "";
-  const { data: splitEarnings, isLoading: balanceLoading } = useSplitEarnings(
-    8453,
-    splitAddress,
-    { erc20TokenList: ['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'] }
-  );
-  // Debug: log all active balances
-  console.log('Active Balances for project', project.id, splitEarnings?.activeBalances);
-  const usdcTokenAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'.toLowerCase();
-  const usdcBalanceObj = Array.isArray(splitEarnings?.activeBalances)
-    ? splitEarnings.activeBalances.find((b: any) => b?.token?.toLowerCase() === usdcTokenAddress)
-    : undefined;
-  let usdcBalance = usdcBalanceObj
-    ? Number(usdcBalanceObj.rawAmount) / 1e6
-    : null;
-
-  // Fallback: fetch on-chain if SDK returns null/undefined
+  // Always fetch USDC balance on-chain
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState<boolean>(true);
   useEffect(() => {
     async function fetchOnChainBalance() {
-      if (!splitAddress || usdcBalance !== null) return;
+      if (!splitAddress) return;
+      setBalanceLoading(true);
       try {
         const { ethers } = await import('ethers');
         const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
@@ -58,17 +50,15 @@ function ProjectCard({ project, onDelete, currentUserId }: { project: Project; o
           usdc.balanceOf(splitAddress),
           usdc.decimals(),
         ]);
-        setFallbackBalance(Number(raw.toString()) / 10 ** Number(decimals));
+        setUsdcBalance(Number(raw.toString()) / 10 ** Number(decimals));
       } catch (e) {
-        setFallbackBalance(0);
+        setUsdcBalance(0);
+      } finally {
+        setBalanceLoading(false);
       }
     }
     fetchOnChainBalance();
-  }, [splitAddress, usdcBalance]);
-
-  if (usdcBalance === null && fallbackBalance !== null) {
-    usdcBalance = fallbackBalance;
-  }
+  }, [splitAddress]);
 
   const { wallets } = useWallets();
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
@@ -126,6 +116,62 @@ function ProjectCard({ project, onDelete, currentUserId }: { project: Project; o
     } catch (err: any) {
       setInvestStatus('error');
       setInvestError(err?.message || "Transaction failed");
+    }
+  };
+
+  const handleDistribute = async () => {
+    console.log('Distribute: Start', { embeddedWallet, splitAddress });
+    if (!embeddedWallet || !splitAddress) {
+      console.error('Distribute: Missing embeddedWallet or splitAddress', { embeddedWallet, splitAddress });
+      return;
+    }
+    setDistributeStatus('loading');
+    setDistributeError(null);
+    try {
+      const provider = new ethers.BrowserProvider(await embeddedWallet.getEthereumProvider());
+      const network = await provider.getNetwork();
+      const signer = await provider.getSigner();
+      const walletAddress = await signer.getAddress();
+      console.log('Distribute: Wallet address', walletAddress);
+      // @ts-ignore
+      if (Number(network.chainId) !== 8453) {
+        console.log('Distribute: Switching to Base network');
+        await provider.send('wallet_switchEthereumChain', [{ chainId: '0x2105' }]);
+      }
+      const tokenAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      // Create viem public client for Base
+      const publicClient = createPublicClient({
+        chain: base,
+        transport: http(),
+      });
+      // Wrap Privy provider as viem wallet client
+      const viemWalletClient = createWalletClient({
+        account: walletAddress as `0x${string}`,
+        chain: base,
+        transport: custom(await embeddedWallet.getEthereumProvider()),
+      });
+      // Use Splits SDK core client with viem wallet and public client
+      const splitsClient = new SplitV2Client({
+        chainId: 8453,
+        walletClient: viemWalletClient,
+        publicClient,
+      });
+      console.log('Distribute: Calling splitsClient.distribute', {
+        splitAddress: splitAddress,
+        tokenAddress: tokenAddress,
+        distributorAddress: walletAddress,
+      });
+      const response = await splitsClient.distribute({
+        splitAddress: splitAddress as `0x${string}`,
+        tokenAddress: tokenAddress as `0x${string}`,
+        distributorAddress: walletAddress as `0x${string}`,
+      });
+      console.log('Distribute: splitsClient.distribute response', response);
+      setDistributeStatus('success');
+    } catch (err: any) {
+      console.error('Distribute: Error', err);
+      setDistributeStatus('error');
+      setDistributeError(err?.message || "Distribution failed");
     }
   };
 
@@ -206,6 +252,20 @@ function ProjectCard({ project, onDelete, currentUserId }: { project: Project; o
                 >
                   Invest
                 </Button>
+                {usdcBalance && usdcBalance > 0 && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDistribute();
+                    }}
+                    disabled={distributeStatus === 'loading' || !splitAddress}
+                    className="w-full"
+                  >
+                    {distributeStatus === 'loading' ? 'Distributing...' : 'Distribute'}
+                  </Button>
+                )}
                 <Button
                   variant="destructive"
                   size="sm"
@@ -213,9 +273,15 @@ function ProjectCard({ project, onDelete, currentUserId }: { project: Project; o
                   disabled={isDeleting || project.creator_id !== currentUserId}
                   className="w-full"
                 >
-                  {isDeleting ? "Deleting..." : "Delete Project"}
+                  {isDeleting ? "Deleting..." : "Delete"}
                 </Button>
               </div>
+              {distributeStatus === 'success' && (
+                <div className="text-green-600 text-sm">Distribution successful!</div>
+              )}
+              {distributeStatus === 'error' && (
+                <div className="text-red-600 text-sm">{distributeError}</div>
+              )}
               {/* Invest Modal */}
               {showInvest && (
                 <Dialog open={showInvest} onOpenChange={setShowInvest}>
