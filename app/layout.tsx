@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             >
               <AuthProvider>
                 {/* Background patterns and decorations */}
-                <div className="fixed inset-0 -z-10">
+                <div className="fixed inset-0 -z-10 bg-background">
                   {/* Subtle grid pattern */}
                   <div className="absolute inset-0 w-full h-full opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:32px_32px]" />
 
@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
 
                 {/* Main content - fix nested min-h-screen issue */}
-                <div className="flex flex-col h-full">
+                <div className="relative flex flex-col min-h-screen">
                   <Header />
                   <main className="flex-1">{children}</main>
                   <Footer />

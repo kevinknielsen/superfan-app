@@ -10,7 +10,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: transparent;
+  background: rgb(var(--background-start-rgb));
 }
 
 @layer utilities {
