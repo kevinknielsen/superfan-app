@@ -24,7 +24,7 @@ const mockInvestmentGroups = [
     },
     description:
       "Independent label specializing in indie pop and electronic music with a focus on emerging artists and innovative sounds.",
-    activeDeals: 2,
+    activeProjects: 2,
     totalRaised: "$125K",
   },
   {
@@ -38,7 +38,7 @@ const mockInvestmentGroups = [
       avatar: "/placeholder-avatars/avatar-2.png",
     },
     description: "Artist-owned label focused on hip-hop, R&B and soul music | Streaming: 50M+ monthly",
-    activeDeals: 3,
+    activeProjects: 3,
     totalRaised: "$250K",
   },
   {
@@ -52,7 +52,7 @@ const mockInvestmentGroups = [
       avatar: "/placeholder-avatars/avatar-3.png",
     },
     description: "Electronic and ambient music curator with a roster of innovative producers and composers",
-    activeDeals: 4,
+    activeProjects: 4,
     totalRaised: "$180K",
   },
 ]
@@ -150,7 +150,7 @@ export default function BrowsePage() {
               <h2 className="text-2xl font-bold">
                 See our <span className="font-normal">trending curators</span>
               </h2>
-              <Link href="/groups">
+              <Link href="/curators">
                 <Button variant="link" className="text-blue-600">
                   Browse all curators
                 </Button>
@@ -203,18 +203,18 @@ export default function BrowsePage() {
                     <div className="border-t pt-4 mt-4">
                       <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-center">
-                          <div className="text-sm text-gray-500">Active Deals</div>
+                          <div className="text-sm text-gray-500">Active Projects</div>
                           <div className="text-sm text-gray-500">Total Raised</div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <div className="font-bold text-xl">{group.activeDeals}</div>
+                          <div className="font-bold text-xl">{group.activeProjects}</div>
                           <div className="font-bold text-xl">{group.totalRaised}</div>
                         </div>
                       </div>
                     </div>
 
                     <div className="mt-4">
-                      <Link href={`/groups/${group.id}`}>
+                      <Link href={`/curators/${group.id}`}>
                         <Button variant="outline" className="w-full">
                           View Group
                         </Button>

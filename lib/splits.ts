@@ -1,7 +1,8 @@
-import { SplitV2Client } from "@0xsplits/splits-sdk";
+import { SplitV2Client, WarehouseClient } from "@0xsplits/splits-sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { base } from "viem/chains";
 import { ConnectedWallet } from "@privy-io/react-auth";
+import { ethers } from "ethers";
 
 // Platform wallet address
 const PLATFORM_WALLET = "0x8e1f13A08012F34dc8750eE34B78e90B5616f194";
@@ -171,5 +172,64 @@ export async function getSplitDetails(splitAddress: string) {
   } catch (error: any) {
     console.error("Error getting split details:", error);
     throw new Error(error?.message || "Failed to get split details");
+  }
+}
+
+export async function withdrawFromWarehouse({ wallet, tokenAddress }: { wallet: ConnectedWallet, tokenAddress: string }) {
+  try {
+    if (!wallet || !tokenAddress) {
+      return { success: false, error: "Wallet and token address are required." };
+    }
+
+    const provider = new ethers.BrowserProvider(await wallet.getEthereumProvider());
+    const network = await provider.getNetwork();
+    const signer = await provider.getSigner();
+    const walletAddress = await signer.getAddress();
+
+    // Switch to Base network if needed
+    if (Number(network.chainId) !== base.id) {
+      await provider.send("wallet_switchEthereumChain", [{ chainId: `0x${base.id.toString(16)}` }]);
+    }
+
+    // Create viem public client for Base
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: http(),
+    });
+
+    // Wrap Privy provider as viem wallet client
+    const viemWalletClient = createWalletClient({
+      account: walletAddress as `0x${string}`,
+      chain: base,
+      transport: custom(await wallet.getEthereumProvider()),
+    });
+
+    // Use Warehouse SDK client with viem wallet and public client
+    const warehouseClient = new WarehouseClient({
+      chainId: base.id,
+      publicClient,
+      walletClient: viemWalletClient,
+    });
+
+    // Check balance before withdrawing
+    const { balance } = await warehouseClient.balanceOf({
+      ownerAddress: walletAddress as `0x${string}`,
+      tokenAddress: tokenAddress as `0x${string}`
+    });
+
+    if (balance === BigInt(0)) {
+      return { success: false, error: "No funds available to withdraw" };
+    }
+
+    // Withdraw funds from warehouse
+    const tx = await warehouseClient.withdraw({
+      ownerAddress: walletAddress as `0x${string}`,
+      tokenAddress: tokenAddress as `0x${string}`,
+    });
+
+    return { success: true, tx };
+  } catch (error: any) {
+    console.error("Error withdrawing from warehouse:", error);
+    return { success: false, error: error?.message || "Failed to withdraw from warehouse" };
   }
 }

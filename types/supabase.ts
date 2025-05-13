@@ -45,9 +45,9 @@ export type Financing = {
 };
 
 export type CuratorPitch = {
-  id: string;
-  project_id: string;
-  curator_id: string | null;
+  id: string; // UUID
+  project_id: string; // UUID
+  curator_id: string | null; // UUID
 };
 
 export type ProjectData = Project & {
@@ -61,7 +61,7 @@ export type ProjectData = Project & {
 };
 
 export type Curator = {
-  id: string;
+  id: string; // UUID
   name: string;
   avatar: string | null;
   selected: boolean;

@@ -92,7 +92,7 @@ function MobileMenu({
         <Link href="/projects" className="text-gray-300 hover:text-white py-2" onClick={() => setMobileMenuOpen(false)}>
           Projects
         </Link>
-        <Link href="/groups" className="text-gray-300 hover:text-white py-2" onClick={() => setMobileMenuOpen(false)}>
+        <Link href="/curators" className="text-gray-300 hover:text-white py-2" onClick={() => setMobileMenuOpen(false)}>
           Curators
         </Link>
         <span className="text-gray-500 py-2 cursor-not-allowed select-none" aria-disabled="true" title="Coming soon">Profile</span>
@@ -180,7 +180,7 @@ export default function Header() {
             <Link href="/projects" className="text-gray-300 hover:text-white">
               Projects
             </Link>
-            <Link href="/groups" className="text-gray-300 hover:text-white">
+            <Link href="/curators" className="text-gray-300 hover:text-white">
               Curators
             </Link>
           </div>
