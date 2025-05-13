@@ -12,6 +12,14 @@ import { useWalletBalance } from "@/hooks/use-wallet-balance";
 import { FundModal } from "@/components/ui/fund-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { withdrawFromWarehouse } from "@/lib/splits";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // USDC contract address on Base mainnet
 const USDC_CONTRACT_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -19,8 +27,11 @@ const USDC_CONTRACT_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 export default function WalletPage() {
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isFundModalOpen, setIsFundModalOpen] = useState(false);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const { balance, loading } = useWalletBalance();
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState("");
+  const { balance, loading, refetch: fetchOnChainBalance } = useWalletBalance();
   const { wallets } = useWallets();
   const { toast } = useToast();
   const { fundWallet } = useFundWallet();
@@ -39,18 +50,46 @@ export default function WalletPage() {
     }
 
     try {
-      // Implement withdrawal logic here
-      toast({
-        title: "Coming Soon",
-        description: "Withdrawal functionality will be available soon",
+      setIsWithdrawing(true);
+      setWithdrawError("");
+      console.log("Calling withdrawFromWarehouse...");
+      const result = await withdrawFromWarehouse({
+        wallet: embeddedWallet,
+        tokenAddress: USDC_CONTRACT_ADDRESS,
       });
-    } catch (error) {
+      console.log("withdrawFromWarehouse result:", result);
+
+      if (!result.success) {
+        console.log("Withdrawal unsuccessful, error:", result.error);
+        setWithdrawError(result.error || "Withdrawal failed");
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Withdrawal successful, tx:", result.tx);
+      toast({
+        title: "Success",
+        description: "Funds withdrawn successfully",
+      });
+      setIsWithdrawModalOpen(false);
+      // Refresh balance after withdrawal
+      setTimeout(() => {
+        fetchOnChainBalance();
+      }, 2000);
+    } catch (error: any) {
       console.error("Error withdrawing:", error);
+      setWithdrawError(error?.message || "Failed to initiate withdrawal");
       toast({
         title: "Error",
-        description: "Failed to initiate withdrawal",
+        description: error?.message || "Failed to initiate withdrawal",
         variant: "destructive",
       });
+    } finally {
+      setIsWithdrawing(false);
     }
   };
 
@@ -115,19 +154,19 @@ export default function WalletPage() {
           </div>
           <div className="flex gap-4">
             <Button
-              variant="outline"
-              onClick={handleWithdraw}
-              disabled={loading || !embeddedWallet}
-              aria-label="Withdraw funds from wallet"
-            >
-              Withdraw
-            </Button>
-            <Button
               onClick={() => setIsFundModalOpen(true)}
               disabled={loading || !embeddedWallet}
               aria-label="Fund your wallet"
             >
               Fund
+            </Button>
+            <Button
+              onClick={() => {}}
+              disabled={true}
+              variant="outline"
+              aria-label="Withdraw funds"
+            >
+              Withdraw
             </Button>
           </div>
         </CardContent>
@@ -187,18 +226,55 @@ export default function WalletPage() {
             <p className="text-gray-600 max-w-md mb-4">
               If you have claimable USDC from music projects, you can withdraw it to your wallet here.
             </p>
-            <a
-              href="https://app.splits.org/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button 
               className="w-full max-w-xs"
-              aria-label="Go to Splits.org to claim your funds"
+              onClick={() => {
+                console.log('Withdraw button clicked');
+                console.log('Current modal state:', isWithdrawModalOpen);
+                setIsWithdrawModalOpen(true);
+                console.log('New modal state:', true);
+              }}
+              disabled={!embeddedWallet}
             >
-              <Button className="w-full">Claim on Splits.org</Button>
-            </a>
+              Withdraw from Splits
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Withdraw Modal */}
+      <Dialog 
+        open={isWithdrawModalOpen} 
+        onOpenChange={(open) => {
+          console.log('Dialog onOpenChange:', open);
+          setIsWithdrawModalOpen(open);
+          if (!open) setWithdrawError("");
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Withdraw from Splits</DialogTitle>
+            <DialogDescription>
+              Withdraw your claimable USDC from revenue splits to your wallet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <Button
+              onClick={() => {
+                console.log('Confirm withdrawal clicked');
+                handleWithdraw();
+              }}
+              disabled={isWithdrawing}
+              className="w-full"
+            >
+              {isWithdrawing ? "Withdrawing..." : "Confirm Withdrawal"}
+            </Button>
+            {withdrawError && (
+              <div className="text-red-500 text-sm text-center mt-2">{withdrawError}</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modals */}
       {embeddedWallet && (

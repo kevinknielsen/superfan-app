@@ -18,6 +18,28 @@ interface CreateProjectSplitParams {
   wallet: ConnectedWallet;
 }
 
+// Warehouse contract ABI for withdraw(address _owner, address _token)
+const WAREHOUSE_ABI = [
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_owner", "type": "address" },
+      { "internalType": "address", "name": "_token", "type": "address" }
+    ],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const;
+
+// Warehouse contract address on Base
+const WAREHOUSE_ADDRESS = "0x8fb66F38cF86A3d5e8768f8F1754A24A6c661Fb8";
+
+interface WithdrawFromWarehouseParams {
+  wallet: any;
+  tokenAddress: string;
+}
+
 // Utility function to initialize viem clients
 const initializeClients = async (provider: any, walletAddress: string) => {
   const publicClient = createPublicClient({
@@ -86,12 +108,20 @@ export async function createProjectSplit({ collaborators, ownerAddress, wallet }
       throw new Error("Collaborators list is empty. Please provide at least one collaborator.");
     }
 
+    // Calculate the adjusted percentages for collaborators
+    const remainingPercentage = 100 - PLATFORM_FEE_PERCENT;
+    const adjustedCollaborators = collaborators.map(collab => {
+      // Calculate the percentage of the remaining amount
+      const adjustedPercent = (collab.percent / 100) * remainingPercentage;
+      return {
+        address: collab.address as `0x${string}`,
+        percentAllocation: adjustedPercent,
+      };
+    });
+
     const allRecipients = [
       { address: PLATFORM_WALLET as `0x${string}`, percentAllocation: PLATFORM_FEE_PERCENT },
-      ...collaborators.map((collab) => ({
-        address: collab.address as `0x${string}`,
-        percentAllocation: collab.percent,
-      })),
+      ...adjustedCollaborators,
     ];
 
     const totalAllocationPercent = allRecipients.reduce((sum, r) => sum + r.percentAllocation, 0);
@@ -171,5 +201,71 @@ export async function getSplitDetails(splitAddress: string) {
   } catch (error: any) {
     console.error("Error getting split details:", error);
     throw new Error(error?.message || "Failed to get split details");
+  }
+}
+
+export async function withdrawFromWarehouse({ wallet, tokenAddress }: WithdrawFromWarehouseParams) {
+  try {
+    if (!wallet) {
+      throw new Error("No wallet provided");
+    }
+
+    const provider = await wallet.getEthereumProvider();
+    const currentChainId = await provider.request({ method: "eth_chainId" });
+
+    if (currentChainId !== `0x${base.id.toString(16)}`) {
+      try {
+        await provider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: `0x${base.id.toString(16)}` }],
+        });
+      } catch (switchError: any) {
+        if (switchError.code === 4902) {
+          try {
+            await provider.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: `0x${base.id.toString(16)}`,
+                  chainName: "Base",
+                  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+                  rpcUrls: ["https://mainnet.base.org"],
+                  blockExplorerUrls: ["https://basescan.org"],
+                },
+              ],
+            });
+          } catch (addError) {
+            throw new Error("Failed to add Base network to wallet");
+          }
+        } else {
+          throw new Error("Failed to switch to Base network");
+        }
+      }
+    }
+
+    const { publicClient, walletClient } = await initializeClients(provider, wallet.address);
+
+    // Prepare the contract write for withdraw(address _owner, address _token)
+    const { request } = await publicClient.simulateContract({
+      address: WAREHOUSE_ADDRESS as `0x${string}`,
+      abi: WAREHOUSE_ABI,
+      functionName: 'withdraw',
+      args: [wallet.address as `0x${string}`, tokenAddress as `0x${string}`],
+      account: wallet.address as `0x${string}`,
+    });
+
+    // Send the transaction
+    const tx = await walletClient.writeContract(request);
+
+    return {
+      success: true,
+      tx,
+    };
+  } catch (error: any) {
+    console.error("Error withdrawing from warehouse:", error);
+    return {
+      success: false,
+      error: error?.message || "Failed to withdraw from warehouse",
+    };
   }
 }

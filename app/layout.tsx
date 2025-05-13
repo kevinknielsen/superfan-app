@@ -45,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <SplitsProvider config={splitsConfig}>
+            {/* eslint-disable-next-line react/no-unknown-property */}
             <PrivyProvider
               appId={NEXT_PUBLIC_PRIVY_APP_ID}
               config={{
