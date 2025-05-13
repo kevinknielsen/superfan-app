@@ -96,11 +96,11 @@ type Action =
 
 // Sample curators data
 const availableCurators: Curator[] = [
-  { id: "curator-1", name: "Indie Music Fund", avatar: "/placeholder-avatars/avatar-1.png", selected: false },
-  { id: "curator-2", name: "Beat Collective", avatar: "/placeholder-avatars/avatar-2.png", selected: false },
-  { id: "curator-3", name: "Harmony Ventures", avatar: "/placeholder-avatars/avatar-3.png", selected: false },
-  { id: "curator-4", name: "Rhythm Capital", avatar: "/placeholder-avatars/avatar-4.png", selected: false },
-  { id: "curator-5", name: "Melody Investments", avatar: "/placeholder-avatars/avatar-5.png", selected: false },
+  { id: "550e8400-e29b-41d4-a716-446655440000", name: "Indie Music Fund", avatar: "/placeholder-avatars/avatar-1.png", selected: false },
+  { id: "550e8400-e29b-41d4-a716-446655440001", name: "Beat Collective", avatar: "/placeholder-avatars/avatar-2.png", selected: false },
+  { id: "550e8400-e29b-41d4-a716-446655440002", name: "Harmony Ventures", avatar: "/placeholder-avatars/avatar-3.png", selected: false },
+  { id: "550e8400-e29b-41d4-a716-446655440003", name: "Rhythm Capital", avatar: "/placeholder-avatars/avatar-4.png", selected: false },
+  { id: "550e8400-e29b-41d4-a716-446655440004", name: "Melody Investments", avatar: "/placeholder-avatars/avatar-5.png", selected: false },
 ];
 
 // Initial state
