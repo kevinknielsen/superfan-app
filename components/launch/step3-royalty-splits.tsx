@@ -1005,6 +1005,7 @@ export default function Step3RoyaltySplits({ onNext, onPrevious }: Step2Props) {
       email: collab.email,
       wallet_address: collab.walletAddress,
       revenue_share_pct: collab.percentage,
+      status: 'pending'
     }));
 
     // Validate sum = 100
@@ -1020,6 +1021,36 @@ export default function Step3RoyaltySplits({ onNext, onPrevious }: Step2Props) {
       setErrors((prev) => ({ ...prev, general: { submit: "Failed to save team members: " + error.message } }));
       return;
     }
+
+    // Send invites to team members with email addresses
+    const emailInvites = teamMembersArray
+      .filter(member => member.email)
+      .map(async (member) => {
+        try {
+          const response = await fetch('/api/send-invite', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: member.email,
+              name: member.name,
+              projectId: projectData.id,
+              role: member.role
+            }),
+          });
+
+          if (!response.ok) {
+            console.error(`Failed to send invite to ${member.email}`);
+          }
+        } catch (error) {
+          console.error(`Error sending invite to ${member.email}:`, error);
+        }
+      });
+
+    // Wait for all invites to be sent
+    await Promise.all(emailInvites);
+
     onNext();
   }, [validateForm, onNext, collaborators, projectData.id, updateField]);
 
