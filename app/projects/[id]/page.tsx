@@ -13,6 +13,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from "recharts";
 import { ProjectReviewDetails } from "@/components/projects/project-review-details";
 import { formatDate } from "@/lib/utils";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { useRef } from "react";
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import FileUpload from "@/components/ui/file-upload";
 
 interface ProjectDetails extends Project {
   royalty_splits?: Array<{
@@ -42,12 +50,63 @@ interface ProjectDetails extends Project {
 
 const SPLIT_COLORS = ["#6366f1", "#f59e42", "#34c759", "#e11d48", "#06b6d4", "#fbbf24", "#a21caf", "#10b981"]; // Extend as needed
 
+// TipTap Toolbar component
+function TiptapMenuBar({ editor }: { editor: any }) {
+  if (!editor) return null;
+  return (
+    <div className="flex flex-wrap gap-2 mb-2 border-b pb-2">
+      <button type="button" className={editor.isActive('bold') ? 'font-bold text-blue-600' : ''} onClick={() => editor.chain().focus().toggleBold().run()}><b>B</b></button>
+      <button type="button" className={editor.isActive('italic') ? 'italic text-blue-600' : ''} onClick={() => editor.chain().focus().toggleItalic().run()}><i>I</i></button>
+      <button type="button" className={editor.isActive('underline') ? 'underline text-blue-600' : ''} onClick={() => editor.chain().focus().toggleUnderline().run()}>U</button>
+      <button type="button" className={editor.isActive('heading', { level: 1 }) ? 'font-bold text-lg text-blue-600' : ''} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>H1</button>
+      <button type="button" className={editor.isActive('heading', { level: 2 }) ? 'font-bold text-blue-600' : ''} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
+      <button type="button" className={editor.isActive('bulletList') ? 'text-blue-600' : ''} onClick={() => editor.chain().focus().toggleBulletList().run()}>• List</button>
+      <button type="button" className={editor.isActive('orderedList') ? 'text-blue-600' : ''} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1. List</button>
+      <button type="button" className={editor.isActive('blockquote') ? 'text-blue-600' : ''} onClick={() => editor.chain().focus().toggleBlockquote().run()}>❝</button>
+      <button type="button" className={editor.isActive('code') ? 'text-blue-600' : ''} onClick={() => editor.chain().focus().toggleCode().run()}>Code</button>
+      <button type="button" className={editor.isActive('link') ? 'text-blue-600' : ''} onClick={() => {
+        const url = window.prompt('Enter URL');
+        if (url) editor.chain().focus().setLink({ href: url }).run();
+      }}>🔗</button>
+      <button type="button" onClick={() => editor.chain().focus().unsetLink().run()}>Unlink</button>
+    </div>
+  );
+}
+
 export default function ProjectPage() {
   const params = useParams();
   const [project, setProject] = useState<ProjectDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const [showOverviewEdit, setShowOverviewEdit] = useState(false);
+  const [showDeckEdit, setShowDeckEdit] = useState(false);
+  const [editOverview, setEditOverview] = useState<{
+    title: string;
+    description: string;
+    artist_name: string;
+    cover_art_url: string;
+    coverArtFile: File | null;
+  }>({
+    title: project?.title || "",
+    description: project?.description || "",
+    artist_name: project?.artist_name || "",
+    cover_art_url: project?.cover_art_url || "",
+    coverArtFile: null,
+  });
+  const [savingOverview, setSavingOverview] = useState(false);
+  const [overviewError, setOverviewError] = useState("");
+  const [savingDeck, setSavingDeck] = useState(false);
+  const [deckError, setDeckError] = useState("");
+
+  const deckEditor = useEditor({
+    extensions: [StarterKit, Link],
+    content: project?.content || "",
+  });
+
+  console.log("user.id", user?.id, "project.creator_id", project?.creator_id);
+  const isCreator = user?.id && project?.creator_id && user.id === project.creator_id;
+  console.log("isCreator", isCreator);
 
   useEffect(() => {
     const fetchProjectDetails = async () => {
@@ -73,6 +132,8 @@ export default function ProjectPage() {
           supabase.from("financing").select().eq("project_id", projectId),
           supabase.from("team_members").select().eq("project_id", projectId)
         ]);
+
+        console.log("Fetched projectData:", projectData);
 
         const financing = Array.isArray(financingArr) && financingArr.length > 0 ? financingArr[0] : null;
         const allTeamMembers = Array.isArray(teamMembers) ? teamMembers : [];
@@ -111,6 +172,18 @@ export default function ProjectPage() {
 
     fetchProjectDetails();
   }, [params?.id]);
+
+  useEffect(() => {
+    if (project) {
+      setEditOverview({
+        title: project.title || "",
+        description: project.description || "",
+        artist_name: project.artist_name || "",
+        cover_art_url: project.cover_art_url || "",
+        coverArtFile: null,
+      });
+    }
+  }, [project]);
 
   // Helper for stat cards
   function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
@@ -152,7 +225,7 @@ export default function ProjectPage() {
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="deck">Deck</TabsTrigger>
+              <TabsTrigger value="deck">Information</TabsTrigger>
               <TabsTrigger value="splits">Splits</TabsTrigger>
               <TabsTrigger value="milestones">Milestones</TabsTrigger>
               <TabsTrigger value="team">Team</TabsTrigger>
@@ -199,6 +272,16 @@ export default function ProjectPage() {
                         <dd className="font-medium text-right">{project.created_at ? formatDate(project.created_at) : "-"}</dd>
                       </div>
                     </dl>
+                    <div className="mb-2">
+                      <button className="bg-gray-100 rounded p-1 text-xs" onClick={() => setShowOverviewEdit(true)}>
+                        Test Edit (always visible)
+                      </button>
+                    </div>
+                    {isCreator && (
+                      <button className="absolute top-10 right-2 bg-gray-100 rounded p-1 text-xs" onClick={() => setShowOverviewEdit(true)}>
+                        Edit
+                      </button>
+                    )}
                   </div>
                   {/* Add any additional left-side content here */}
                 </div>
@@ -218,15 +301,12 @@ export default function ProjectPage() {
                       <span className="text-3xl font-bold">{project.financing && project.financing.total_amount ? `$${project.financing.total_amount.toLocaleString()}` : "N/A"} <span className="text-base font-normal text-gray-400">USDC</span></span>
                     </div>
                   </div>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                    <div className="font-semibold text-yellow-800 mb-1 flex items-center gap-2">
-                      <span className="text-lg">⚠️</span> Strict Confidentiality Applies
-                    </div>
-                    <div className="text-sm text-yellow-700">
-                      Regulations require all details from this page to <b>be kept confidential</b>. If you share details from this page, you will be instantly banned from Superfan and we may initiate legal proceedings. Superfan's regulatory structure requires project information to remain private to operate. Please be sensible. Thank you!
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-xl shadow p-6">
+                  <div className="bg-white rounded-xl shadow p-6 relative">
+                    {isCreator && (
+                      <button className="absolute top-2 right-2 bg-gray-100 rounded p-1 text-xs" onClick={() => setShowOverviewEdit(true)}>
+                        Edit
+                      </button>
+                    )}
                     <h3 className="text-2xl font-bold mb-2">{project.title}</h3>
                     <div className="text-gray-700 text-base">{project.description}</div>
                   </div>
@@ -237,7 +317,52 @@ export default function ProjectPage() {
 
             {/* Deck Tab */}
             <TabsContent value="deck">
-              <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">Deck content coming soon.</div>
+              <div className="bg-white rounded-lg shadow p-8 relative min-h-[200px]">
+                {isCreator && !showDeckEdit && (
+                  <button className="absolute top-2 right-2 bg-gray-100 rounded p-1 text-xs" onClick={() => setShowDeckEdit(true)}>
+                    Edit
+                  </button>
+                )}
+                {showDeckEdit ? (
+                  <div>
+                    <TiptapMenuBar editor={deckEditor} />
+                    <div className="mb-4">
+                      <EditorContent 
+                        editor={deckEditor} 
+                        className="min-h-[120px] w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={async () => {
+                        setSavingDeck(true);
+                        setDeckError("");
+                        const supabase = createClient();
+                        const { error } = await supabase.from("projects").update({
+                          content: deckEditor?.getHTML() || "",
+                        }).eq("id", project.id);
+                        if (error) {
+                          setDeckError("Failed to save deck");
+                        } else {
+                          setShowDeckEdit(false);
+                        }
+                        setSavingDeck(false);
+                      }} disabled={savingDeck}>
+                        {savingDeck ? "Saving..." : "Save"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowDeckEdit(false)} disabled={savingDeck}>
+                        Cancel
+                      </Button>
+                    </div>
+                    {deckError && <div className="text-red-500 text-sm mt-2">{deckError}</div>}
+                  </div>
+                ) : (
+                  project.content ? (
+                    <div className="text-left prose max-w-none" dangerouslySetInnerHTML={{ __html: project.content }} />
+                  ) : (
+                    <div className="text-center text-gray-500">Deck content coming soon.</div>
+                  )
+                )}
+              </div>
             </TabsContent>
 
             {/* Splits Tab */}
@@ -357,6 +482,74 @@ export default function ProjectPage() {
           </Tabs>
         </div>
       </div>
+      <Dialog open={showOverviewEdit} onOpenChange={setShowOverviewEdit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Project Overview</DialogTitle>
+          </DialogHeader>
+          <FileUpload
+            label="Upload Artwork"
+            accept="image/png, image/jpeg, image/webp"
+            onChange={e => setEditOverview(prev => ({ ...prev, coverArtFile: e.target.files?.[0] || null }))}
+            preview={editOverview.coverArtFile ? URL.createObjectURL(editOverview.coverArtFile) : editOverview.cover_art_url}
+            onRemove={() => setEditOverview(prev => ({ ...prev, coverArtFile: null, cover_art_url: "" }))}
+          />
+          <Input
+            value={editOverview.title}
+            onChange={e => setEditOverview(prev => ({ ...prev, title: e.target.value }))}
+            placeholder="Project Title"
+            className="mt-4"
+          />
+          <Input
+            value={editOverview.artist_name}
+            onChange={e => setEditOverview(prev => ({ ...prev, artist_name: e.target.value }))}
+            placeholder="Artist Name"
+            className="mt-2"
+          />
+          <Textarea
+            value={editOverview.description}
+            onChange={e => setEditOverview(prev => ({ ...prev, description: e.target.value }))}
+            placeholder="Description"
+            className="mt-2"
+          />
+          {overviewError && <div className="text-red-500 text-sm mt-2">{overviewError}</div>}
+          <DialogFooter>
+            <Button onClick={async () => {
+              setSavingOverview(true);
+              setOverviewError("");
+              let coverArtUrl = editOverview.cover_art_url;
+              if (editOverview.coverArtFile) {
+                const supabase = createClient();
+                const { data, error } = await supabase.storage.from("project-assets").upload(`cover-art/${crypto.randomUUID()}-${editOverview.coverArtFile.name}`, editOverview.coverArtFile);
+                if (error) {
+                  setOverviewError("Failed to upload cover art");
+                  setSavingOverview(false);
+                  return;
+                }
+                coverArtUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
+              }
+              const supabase = createClient();
+              const { error } = await supabase.from("projects").update({
+                title: editOverview.title,
+                description: editOverview.description,
+                artist_name: editOverview.artist_name,
+                cover_art_url: coverArtUrl,
+              }).eq("id", project.id);
+              if (error) {
+                setOverviewError("Failed to save changes");
+              } else {
+                setShowOverviewEdit(false);
+              }
+              setSavingOverview(false);
+            }} disabled={savingOverview}>
+              {savingOverview ? "Saving..." : "Save"}
+            </Button>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ProtectedRoute>
   );
 } 
