@@ -272,11 +272,6 @@ export default function ProjectPage() {
                         <dd className="font-medium text-right">{project.created_at ? formatDate(project.created_at) : "-"}</dd>
                       </div>
                     </dl>
-                    <div className="mb-2">
-                      <button className="bg-gray-100 rounded p-1 text-xs" onClick={() => setShowOverviewEdit(true)}>
-                        Test Edit (always visible)
-                      </button>
-                    </div>
                     {isCreator && (
                       <button className="absolute top-10 right-2 bg-gray-100 rounded p-1 text-xs" onClick={() => setShowOverviewEdit(true)}>
                         Edit
