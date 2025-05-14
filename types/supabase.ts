@@ -11,6 +11,7 @@ export type Project = {
   platform_fee_pct: number;
   early_curator_shares: boolean;
   created_at: string;
+  content?: string | null;
   splits_contract_address?: string | null;
 };
 

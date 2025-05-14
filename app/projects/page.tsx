@@ -6,8 +6,7 @@ import { Filter } from "lucide-react";
 import ProtectedRoute from "@/components/protected-route";
 import { createClient } from "@/utils/supabase/client";
 import { Project } from "@/types/supabase";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { ProjectReviewDetails } from "@/components/projects/project-review-details";
+import { useRouter } from "next/navigation";
 import { ProjectCard } from "@/components/projects/project-card";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -18,11 +17,8 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [modalData, setModalData] = useState<any>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalLoading, setModalLoading] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
 
   // Fetch projects on component mount
   useEffect(() => {
@@ -85,57 +81,9 @@ export default function ProjectsPage() {
     return result;
   }, [projects, statusFilter, sortBy]);
 
-  const handleCardClick = async (project: Project) => {
+  const handleCardClick = (project: Project) => {
     if (project.status !== "published") return;
-
-    setSelectedProject(project);
-    setModalLoading(true);
-    setModalOpen(true);
-
-    try {
-      // Fetch related data
-      const supabase = createClient();
-      const [
-        { data: milestones, error: milestonesError },
-        { data: financing, error: financingError },
-        { data: collaborators, error: collaboratorsError },
-      ] = await Promise.all([
-        supabase.from("milestones").select().eq("project_id", project.id),
-        supabase.from("financing").select().eq("project_id", project.id),
-        supabase.from("team_members").select().eq("project_id", project.id),
-      ]);
-
-      // Error handling
-      if (milestonesError || financingError || collaboratorsError) {
-        throw new Error("Failed to load project details");
-      }
-
-      // Process financing data
-      const financingData =
-        financing && financing.length > 0 ? financing[0] : { message: "No financing data available" };
-
-      // Process collaborators data
-      const processedRoyaltySplits = (collaborators || [])
-        .filter((c) => c.revenue_share_pct > 0)
-        .map((c) => ({
-          id: c.id,
-          recipient: c.name,
-          percentage: c.revenue_share_pct,
-        }));
-
-      setModalData({
-        project,
-        royaltySplits: processedRoyaltySplits,
-        milestones: milestones || [],
-        financing: financingData,
-        collaborators: collaborators || [],
-      });
-    } catch (err) {
-      // Set error message for modal
-      setModalData({ error: "Failed to load project details" });
-    } finally {
-      setModalLoading(false);
-    }
+    router.push(`/projects/${project.id}`);
   };
 
   // Loading state
@@ -266,27 +214,6 @@ export default function ProjectsPage() {
             )}
           </div>
         </div>
-
-        {/* Project Details Modal */}
-        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogTitle className="mb-4">Project Details</DialogTitle>
-            {modalLoading ? (
-              <div className="p-8 text-center text-gray-500">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                Loading project details...
-              </div>
-            ) : modalData ? (
-              modalData.error ? (
-                <div className="p-4 text-center text-red-500" role="alert">
-                  {modalData.error}
-                </div>
-              ) : (
-                <ProjectReviewDetails {...modalData} />
-              )
-            ) : null}
-          </DialogContent>
-        </Dialog>
       </div>
     </ProtectedRoute>
   );
