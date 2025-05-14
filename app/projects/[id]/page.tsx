@@ -21,6 +21,7 @@ import Link from '@tiptap/extension-link';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import FileUpload from "@/components/ui/file-upload";
+import TrackDemoPlayer from "@/components/ui/TrackDemoPlayer";
 
 interface ProjectDetails extends Project {
   royalty_splits?: Array<{
@@ -104,9 +105,9 @@ export default function ProjectPage() {
     content: project?.content || "",
   });
 
-  console.log("user.id", user?.id, "project.creator_id", project?.creator_id);
+  // console.log("user.id", user?.id, "project.creator_id", project?.creator_id);
   const isCreator = user?.id && project?.creator_id && user.id === project.creator_id;
-  console.log("isCreator", isCreator);
+  // console.log("isCreator", isCreator);
 
   useEffect(() => {
     const fetchProjectDetails = async () => {
@@ -278,6 +279,7 @@ export default function ProjectPage() {
                       </button>
                     )}
                   </div>
+                  <TrackDemoPlayer url={project.track_demo_url} />
                   {/* Add any additional left-side content here */}
                 </div>
                 {/* Right: Stats, warning, and main content */}
