@@ -32,6 +32,18 @@ CREATE TYPE public.team_member_role AS ENUM (
     'Social Media Manager'
 );
 
+-- Create an enum type for team member status
+CREATE TYPE public.team_member_status AS ENUM (
+    'pending',
+    'invited',
+    'accepted'
+);
+
+-- Add status and invite_token columns to team_members table
+ALTER TABLE public.team_members
+ADD COLUMN IF NOT EXISTS status team_member_status DEFAULT 'pending',
+ADD COLUMN IF NOT EXISTS invite_token TEXT UNIQUE;
+
 -- Add a check constraint to ensure only valid roles are used
 ALTER TABLE public.team_members 
     DROP CONSTRAINT IF EXISTS team_members_role_check;
