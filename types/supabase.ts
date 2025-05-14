@@ -12,6 +12,7 @@ export type Project = {
   early_curator_shares: boolean;
   created_at: string;
   content?: string | null;
+  splits_contract_address?: string | null;
 };
 
 export type TeamMember = {

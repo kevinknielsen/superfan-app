@@ -58,6 +58,7 @@ function FileUpload({
                 type="button"
                 onClick={onRemove}
                 className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md"
+                aria-label="Remove uploaded file"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -142,6 +143,14 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 20 * 1024 * 1024) {
+        setErrors((prev) => ({
+          ...prev,
+          artwork: "File size must be less than 20MB",
+        }));
+        return;
+      }
+
       // Use the utility function to create a sanitized file
       const sanitizedFile = createSanitizedFile(file);
 
@@ -400,44 +409,47 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
       let trackDemoUrl = null;
       let voiceIntroUrl = null;
 
-      // 1. Upload files to Supabase Storage if present
-      if (projectData.artwork) {
-        console.log("Uploading artwork file:", projectData.artwork);
-        const { data, error } = await supabase.storage
-          .from("project-assets")
-          .upload(`cover-art/${crypto.randomUUID()}-${projectData.artwork.name}`, projectData.artwork);
-        if (error) {
-          console.error("Supabase upload error:", error);
-          setErrors((prev) => ({ ...prev, artwork: "Failed to upload cover art: " + error.message }));
-          return;
+      try {
+        // 1. Upload files to Supabase Storage if present
+        if (projectData.artwork) {
+          console.log("Uploading artwork file:", projectData.artwork);
+          const { data: artworkData, error: artworkError } = await supabase.storage
+            .from("project-assets")
+            .upload(`cover-art/${crypto.randomUUID()}-${projectData.artwork.name}`, projectData.artwork);
+          if (artworkError) {
+            console.error("Supabase upload error:", artworkError);
+            setErrors((prev) => ({ ...prev, artwork: "Failed to upload cover art: " + artworkError.message }));
+            return;
+          }
+          coverArtUrl = supabase.storage.from("project-assets").getPublicUrl(artworkData.path).data.publicUrl;
         }
-        coverArtUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
-      }
-      if (projectData.trackDemo) {
-        const { data, error } = await supabase.storage
-          .from("project-assets")
-          .upload(`track-demo/${crypto.randomUUID()}-${projectData.trackDemo.name}`, projectData.trackDemo);
-        if (error) {
-          setErrors((prev) => ({ ...prev, trackDemo: "Failed to upload track demo" }));
-          return;
-        }
-        trackDemoUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
-      }
-      if (projectData.voiceNote) {
-        const { data, error } = await supabase.storage
-          .from("project-assets")
-          .upload(`voice-intro/${crypto.randomUUID()}-${projectData.voiceNote.name}`, projectData.voiceNote);
-        if (error) {
-          setErrors((prev) => ({ ...prev, voiceNote: "Failed to upload voice intro" }));
-          return;
-        }
-        voiceIntroUrl = supabase.storage.from("project-assets").getPublicUrl(data.path).data.publicUrl;
-      }
 
-      // 2. Insert project into Supabase DB
-      const { data, error } = await supabase
-        .from("projects")
-        .insert({
+        if (projectData.trackDemo) {
+          const { data: trackData, error: trackError } = await supabase.storage
+            .from("project-assets")
+            .upload(`track-demo/${crypto.randomUUID()}-${projectData.trackDemo.name}`, projectData.trackDemo);
+          if (trackError) {
+            console.error("Track demo upload error:", trackError);
+            setErrors((prev) => ({ ...prev, trackDemo: "Failed to upload track demo: " + trackError.message }));
+            return;
+          }
+          trackDemoUrl = supabase.storage.from("project-assets").getPublicUrl(trackData.path).data.publicUrl;
+        }
+
+        if (projectData.voiceNote) {
+          const { data: voiceData, error: voiceError } = await supabase.storage
+            .from("project-assets")
+            .upload(`voice-intro/${crypto.randomUUID()}-${projectData.voiceNote.name}`, projectData.voiceNote);
+          if (voiceError) {
+            console.error("Voice intro upload error:", voiceError);
+            setErrors((prev) => ({ ...prev, voiceNote: "Failed to upload voice intro: " + voiceError.message }));
+            return;
+          }
+          voiceIntroUrl = supabase.storage.from("project-assets").getPublicUrl(voiceData.path).data.publicUrl;
+        }
+
+        // 2. Insert project into Supabase DB
+        console.log("Creating project with data:", {
           title: projectData.title,
           artist_name: projectData.artistName,
           description: projectData.description,
@@ -445,22 +457,53 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
           track_demo_url: trackDemoUrl,
           voice_intro_url: voiceIntroUrl,
           creator_id: user.id,
-          // status, platform_fee_pct, early_curator_shares use defaults
-        })
-        .select("id");
+          status: "draft",
+          platform_fee_pct: 2.5,
+          early_curator_shares: false,
+        });
 
-      if (error || !data || !data[0]?.id) {
-        setErrors((prev) => ({ ...prev, submit: "Failed to create project" }));
-        return;
+        const { data, error } = await supabase
+          .from("projects")
+          .insert({
+            title: projectData.title,
+            artist_name: projectData.artistName,
+            description: projectData.description,
+            cover_art_url: coverArtUrl,
+            track_demo_url: trackDemoUrl,
+            voice_intro_url: voiceIntroUrl,
+            creator_id: user.id,
+            status: "draft",
+            platform_fee_pct: 2.5,
+            early_curator_shares: false,
+          })
+          .select("id");
+
+        if (error) {
+          console.error("Project creation error:", error);
+          setErrors((prev) => ({ ...prev, submit: "Failed to create project: " + error.message }));
+          return;
+        }
+
+        if (!data || !data[0]?.id) {
+          console.error("No project ID returned after creation");
+          setErrors((prev) => ({ ...prev, submit: "Failed to create project: No project ID returned" }));
+          return;
+        }
+
+        // 3. Save projectId in context/global state
+        if (typeof updateField === "function") {
+          updateField("id" as keyof ProjectData, data[0].id);
+        }
+
+        // Proceed to next step
+        onNext();
+      } catch (error: any) {
+        console.error("Unexpected error during project creation:", error);
+        setErrors((prev) => ({
+          ...prev,
+          submit: "An unexpected error occurred: " + (error.message || "Unknown error"),
+        }));
       }
-
-      // 3. Save projectId in context/global state
-      if (typeof updateField === "function") {
-        updateField("id" as keyof ProjectData, data[0].id);
-      }
-
-      // Proceed to next step
-      onNext();
     }
   };
 
@@ -610,7 +653,9 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                 </div>
                 {/* Progress Slider */}
                 <div className="w-full flex items-center gap-2">
-                  <span className="text-xs text-gray-500">{formatTime(currentTime)}</span>
+                  <span className="text-xs text-gray-500" aria-live="polite">
+                    {formatTime(currentTime)}
+                  </span>
                   <input
                     type="range"
                     min="0"
@@ -618,8 +663,14 @@ export default function Step1ProjectInfo({ onNext }: Step1Props) {
                     value={currentTime}
                     onChange={handleSliderChange}
                     className="flex-1 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#0f172a]"
+                    aria-valuemin={0}
+                    aria-valuemax={duration}
+                    aria-valuenow={currentTime}
+                    aria-label="Audio progress slider"
                   />
-                  <span className="text-xs text-gray-500">{formatTime(duration)}</span>
+                  <span className="text-xs text-gray-500" aria-live="polite">
+                    {formatTime(duration)}
+                  </span>
                 </div>
                 <audio ref={audioRef} src={projectData.trackDemoPreview} className="hidden" />
               </div>

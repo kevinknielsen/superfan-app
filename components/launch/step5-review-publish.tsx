@@ -8,6 +8,9 @@ import supabase from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { createProjectSplit } from "@/lib/splits";
+import { useAuth } from "@/contexts/auth-context";
+import { useWallets } from "@privy-io/react-auth";
 
 interface Step5Props {
   onNext: () => void;
@@ -30,6 +33,10 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { user, login } = useAuth();
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const { wallets } = useWallets();
+  const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === "privy");
 
   const totalPercentage = useMemo(
     () => projectData.royaltySplits.reduce((sum, split) => sum + split.percentage, 0),
@@ -41,17 +48,86 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
     [projectData.selectedCurators]
   );
 
+  // Utility function for formatting currency
+  const formatCurrency = (amount: number | null): string => {
+    if (amount === null) return "N/A";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  // Enhanced handlePublish with better error handling
   const handlePublish = async () => {
-    if (!projectData.id) return onNext();
+    setPublishError(null);
+    console.log("Privy user object:", user);
+
+    if (!user) {
+      try {
+        await login();
+      } catch (e) {
+        setPublishError("Wallet connection was cancelled or failed.");
+        return;
+      }
+    }
+
+    if (!embeddedWallet) {
+      setPublishError("No Privy wallet found. Please connect your wallet first.");
+      return;
+    }
+
+    if (!projectData.id) {
+      const errorMsg = "Project ID missing. Please complete all steps.";
+      setPublishError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Update project status to published
+      const { data: teamMembers, error: teamError } = await supabase
+        .from("team_members")
+        .select("wallet_address, revenue_share_pct")
+        .eq("project_id", projectData.id);
+      if (teamError) throw new Error("Failed to fetch team members: " + teamError.message);
+
+      const validCollaborators = (teamMembers || []).filter((member) =>
+        /^0x[a-fA-F0-9]{40}$/.test(member.wallet_address)
+      );
+      if (validCollaborators.length === 0) {
+        setPublishError(
+          "No valid wallet addresses found for collaborators. Please ensure all team members have a wallet address."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const collaborators = validCollaborators.map((member) => ({
+        address: member.wallet_address,
+        percent: member.revenue_share_pct,
+      }));
+
+      const { splitAddress, txHash } = await createProjectSplit({
+        collaborators,
+        ownerAddress: embeddedWallet.address,
+        wallet: embeddedWallet,
+      });
+
       const { error: updateError } = await supabase
         .from("projects")
-        .update({ status: "published" })
+        .update({
+          status: "published",
+          splits_contract_address: splitAddress,
+          splits_tx_hash: txHash,
+        })
         .eq("id", projectData.id);
-      
+
       if (updateError) throw new Error("Failed to update project status: " + updateError.message);
 
       if (selectedCurators.length > 0) {
@@ -62,11 +138,19 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
         const { error } = await supabase.from("curator_pitches").insert(pitches);
         if (error) throw new Error("Failed to save curator pitches: " + error.message);
       }
+
+      toast({
+        title: "Success",
+        description: "Project published successfully with splits contract created!",
+      });
+
       router.push(`/launch/success?projectId=${projectData.id}`);
     } catch (error: any) {
+      console.error("Error publishing project:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to publish project",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -102,30 +186,16 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
             </div>
             <div className="col-span-2 space-y-4">
               <div>
-                <h4 className="text-sm font-medium text-gray-500">Project Title</h4>
-                <p className="font-medium">{projectData.title || "Untitled Project"}</p>
+                <h4 className="text-sm font-medium text-gray-500">Title</h4>
+                <p className="mt-1">{projectData.title}</p>
               </div>
               <div>
-                <h4 className="text-sm font-medium text-gray-500">Artist Name</h4>
-                <p>{projectData.artistName || "Not specified"}</p>
+                <h4 className="text-sm font-medium text-gray-500">Artist</h4>
+                <p className="mt-1">{projectData.artistName}</p>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-gray-500">Description</h4>
-                <p className="text-sm">{projectData.description || "No description provided"}</p>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-500">Track Demo</h4>
-                <p className="text-sm">
-                  {projectData.trackDemo ? projectData.trackDemo.name : "No track demo uploaded"}
-                </p>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-500">Additional Files</h4>
-                <p className="text-sm">
-                  {projectData.additionalFilesInfo.length > 0
-                    ? `${projectData.additionalFilesInfo.length} file(s) uploaded`
-                    : "No additional files uploaded"}
-                </p>
+                <p className="mt-1 text-gray-600">{projectData.description}</p>
               </div>
             </div>
           </div>
@@ -139,104 +209,94 @@ export default function Step5ReviewPublish({ onNext }: Step5Props) {
         </div>
         <div className="p-4">
           <div className="space-y-4">
-            {projectData.royaltySplits.map((split) => (
-              <div key={split.id} className="flex justify-between items-center border-b pb-2">
-                <span>{split.recipient || "Unnamed Recipient"}</span>
-                <span className="font-medium">{split.percentage}%</span>
+            {projectData.royaltySplits.map((split, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  <UserAvatar userAddress={split.recipient} />
+                  <span>{split.recipient}</span>
+                </div>
+                <span className="text-gray-600" aria-label={`Royalty split percentage for ${split.recipient}`}>
+                  {split.percentage}%
+                </span>
               </div>
             ))}
-            <div className="flex justify-between items-center pt-2">
-              <span className="font-medium">Total</span>
-              <span className={`font-medium ${totalPercentage !== 100 ? "text-red-500" : ""}`}>{totalPercentage}%</span>
+            <div className="pt-2 border-t">
+              <div className="flex justify-between items-center font-medium">
+                <span>Total</span>
+                <span aria-label="Total royalty split percentage">{totalPercentage}%</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Milestones Section */}
-      <div className="border rounded-lg overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b">
-          <h3 className="font-medium">Milestones</h3>
-        </div>
-        <div className="p-4">
-          {projectData.milestones.length > 0 ? (
-            <div className="space-y-4">
-              {projectData.milestones.map((milestone, index) => (
-                <div key={milestone.id} className="border-b pb-4 last:border-0 last:pb-0">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-gray-200 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
-                      {index + 1}
-                    </div>
-                    <h4 className="font-medium">{milestone.title || "Untitled Milestone"}</h4>
-                  </div>
-                  <p className="text-sm mt-2">{milestone.description || "No description provided"}</p>
-                  <div className="flex justify-between mt-2 text-sm text-gray-500">
-                    <span>Due: {milestone.dueDate ? formatDate(milestone.dueDate) : "No date set"}</span>
-                    <span>{milestone.requiresApproval ? "Requires approval" : "Does not require approval"}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No milestones defined</p>
-          )}
-        </div>
-      </div>
-
       {/* Financing Section */}
-      <div className="border rounded-lg overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b">
-          <h3 className="font-medium">Financing</h3>
-        </div>
-        <div className="p-4">
-          {projectData.enableFinancing ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Target Raise</h4>
-                  <p className="font-medium">
-                    {projectData.targetRaise ? `${projectData.targetRaise} USDC` : "Not specified"}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Start Date</h4>
-                  <p>{projectData.financingStartDate ? formatDate(typeof projectData.financingStartDate === 'string' ? projectData.financingStartDate : projectData.financingStartDate.toISOString()) : "Not specified"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">End Date</h4>
-                  <p>{projectData.financingEndDate ? formatDate(typeof projectData.financingEndDate === 'string' ? projectData.financingEndDate : projectData.financingEndDate.toISOString()) : "Not specified"}</p>
-                </div>
-              </div>
+      {projectData.enableFinancing && (
+        <div className="border rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-4 py-3 border-b">
+            <h3 className="font-medium">Financing Details</h3>
+          </div>
+          <div className="p-4 space-y-4">
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Target Raise</h4>
+              <p className="mt-1">{formatCurrency(projectData.targetRaise)}</p>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Contribution Limits</h4>
+              <p className="mt-1">
+                {formatCurrency(projectData.minContribution)} - {formatCurrency(projectData.maxContribution)}
+              </p>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Financing Period</h4>
+              <p className="mt-1">
+                {projectData.financingStartDate
+                  ? formatDate(
+                      (projectData.financingStartDate instanceof Date
+                        ? projectData.financingStartDate
+                        : new Date(projectData.financingStartDate)
+                      ).toISOString()
+                    )
+                  : "Not set"}
+                -{" "}
+                {projectData.financingEndDate
+                  ? formatDate(
+                      (projectData.financingEndDate instanceof Date
+                        ? projectData.financingEndDate
+                        : new Date(projectData.financingEndDate)
+                      ).toISOString()
+                    )
+                  : "Not set"}
+              </p>
+            </div>
 
-              <div>
-                <h4 className="text-sm font-medium text-gray-500 mb-2">
-                  Selected Curators ({selectedCurators.length})
-                </h4>
-                {selectedCurators.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCurators.map((curator) => (
-                      <CuratorBadge key={curator.id} curator={curator} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm">No curators selected</p>
-                )}
-              </div>
+            <div>
+              <h4 className="text-sm font-medium text-gray-500 mb-2">Selected Curators ({selectedCurators.length})</h4>
+              {selectedCurators.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {selectedCurators.map((curator) => (
+                    <CuratorBadge key={curator.id} curator={curator} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No curators selected</p>
+              )}
             </div>
-          ) : (
-            <div className="bg-blue-50 p-3 rounded-md">
-              <p className="text-sm text-blue-800">Financing is disabled. This project will be created as private.</p>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="pt-4">
-        <Button onClick={handlePublish} className="w-full bg-[#0f172a] hover:bg-[#1e293b]" disabled={isLoading}>
+        <Button
+          onClick={handlePublish}
+          className="w-full bg-[#0f172a] hover:bg-[#1e293b]"
+          disabled={isLoading}
+          aria-busy={isLoading}
+          aria-label="Publish project"
+        >
           {isLoading ? "Publishing..." : "Publish Project"}
         </Button>
+        {publishError && <p className="text-center text-red-500 mt-2">{publishError}</p>}
         <p className="text-center text-sm text-gray-500 mt-2">
           By publishing, you agree to our Terms of Service and Privacy Policy
         </p>

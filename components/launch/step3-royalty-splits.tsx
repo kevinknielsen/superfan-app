@@ -76,16 +76,16 @@ const ROLES = {
   "Business Manager": { icon: <Briefcase className="w-4 h-4" />, color: "#EC4899", label: "Business Manager" },
   "Tour Manager": { icon: <Briefcase className="w-4 h-4" />, color: "#06B6D4", label: "Tour Manager" },
   "Merchandise Manager": { icon: <Briefcase className="w-4 h-4" />, color: "#F97316", label: "Merchandise Manager" },
-  "Social Media Manager": { icon: <Briefcase className="w-4 h-4" />, color: "#14B8A6", label: "Social Media Manager" }
+  "Social Media Manager": { icon: <Briefcase className="w-4 h-4" />, color: "#14B8A6", label: "Social Media Manager" },
 };
 
 // Color palette for collaborators
 const COLORS = [
-  'url(#purplePinkGradient)', // Use a gradient fill for the main slice
-  '#a259ff', // purple
-  '#f857a6', // pink
-  '#c084fc', // soft purple
-  '#fbc2eb', // light pink
+  "url(#purplePinkGradient)", // Use a gradient fill for the main slice
+  "#a259ff", // purple
+  "#f857a6", // pink
+  "#c084fc", // soft purple
+  "#fbc2eb", // light pink
 ];
 
 // Add color variations for roles
@@ -139,7 +139,21 @@ const sliderStyles = `
   }
 `;
 
-// Update RangeSlider component
+// Utility function for formatting percentages
+const formatPercentage = (value: number): string => `${value.toFixed(2)}%`;
+
+// Utility function for formatting currency
+const formatCurrency = (amount: number | null): string => {
+  if (amount === null) return "N/A";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
+
+// Enhanced RangeSlider with ARIA attributes for accessibility
 const RangeSlider = memo(function RangeSlider({
   value,
   onChange,
@@ -155,15 +169,6 @@ const RangeSlider = memo(function RangeSlider({
   color: string;
   showValue?: boolean;
 }) {
-  const [isChanging, setIsChanging] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsChanging(true);
-    const newValue = Number(e.target.value);
-    onChange(newValue);
-    setTimeout(() => setIsChanging(false), 300);
-  };
-
   const percentage = ((value - min) / (max - min)) * 100;
 
   return (
@@ -171,12 +176,7 @@ const RangeSlider = memo(function RangeSlider({
       <div className="slider-track">
         <motion.div
           className="slider-fill"
-          style={
-            {
-              backgroundColor: color,
-              "--slider-value": `${percentage}%`,
-            } as React.CSSProperties
-          }
+          style={{ backgroundColor: color, width: `${percentage}%` }}
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
@@ -187,20 +187,20 @@ const RangeSlider = memo(function RangeSlider({
         min={min}
         max={max}
         value={value || 0}
-        onChange={handleChange}
+        onChange={(e) => onChange(Number(e.target.value))}
         className="slider-input"
         style={{ color }}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-label="Adjust percentage"
       />
-      {showValue && (
-        <motion.div className="slider-value" animate={{ scale: isChanging ? 1.1 : 1 }} transition={{ duration: 0.2 }}>
-          {value || 0}%
-        </motion.div>
-      )}
+      {showValue && <div className="slider-value">{formatPercentage(value)}</div>}
     </div>
   );
 });
 
-// Update CollaboratorCard component
+// Improved CollaboratorCard with tooltips and better error handling
 const CollaboratorCard = memo(function CollaboratorCard({
   collaborator,
   onDelete,
@@ -211,7 +211,6 @@ const CollaboratorCard = memo(function CollaboratorCard({
   toggleEmojiPicker,
   emojiPickerState,
 }: CollaboratorCardProps & { toggleEmojiPicker: (id: string) => void; emojiPickerState: Record<string, boolean> }) {
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const roleConfig = ROLES[collaborator.role as keyof typeof ROLES] || ROLES.Artist;
 
   return (
@@ -221,7 +220,9 @@ const CollaboratorCard = memo(function CollaboratorCard({
       transition={{ duration: 0.25, ease: "easeOut" }}
     >
       <Card
-        className={`mb-4 border transition-all ${isSelected ? "border-[#a259ff]" : "border-gray-200"} bg-white text-[#0f172a]`}
+        className={`mb-4 border transition-all ${
+          isSelected ? "border-[#a259ff]" : "border-gray-200"
+        } bg-white text-[#0f172a]`}
         onClick={onSelect}
       >
         <CardContent className="p-4">
@@ -233,70 +234,18 @@ const CollaboratorCard = memo(function CollaboratorCard({
               >
                 {roleConfig.icon}
               </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={collaborator.role}
-                  onChange={(e) => onUpdate("role", e.target.value)}
-                  className="text-sm font-medium bg-transparent border-none focus:ring-0 p-0 pr-6"
-                >
-                  {Object.entries(ROLES).map(([key, { label }]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-8 h-8 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleEmojiPicker(collaborator.id);
-                    }}
-                  >
-                    {collaborator.emoji || "👤"}
-                  </Button>
-                  {emojiPickerState[collaborator.id] && (
-                    <div className="absolute top-10 left-0 bg-white p-2 rounded-lg shadow-lg">
-                      {/* Emoji picker implementation would go here */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onUpdate("emoji", "🎤");
-                          toggleEmojiPicker(collaborator.id);
-                        }}
-                      >
-                        🎤
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onUpdate("emoji", "🎸");
-                          toggleEmojiPicker(collaborator.id);
-                        }}
-                      >
-                        🎸
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onUpdate("emoji", "🎹");
-                          toggleEmojiPicker(collaborator.id);
-                        }}
-                      >
-                        🎹
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <select
+                value={collaborator.role}
+                onChange={(e) => onUpdate("role", e.target.value)}
+                className="text-sm font-medium bg-transparent border-none focus:ring-0 p-0 pr-6"
+                aria-label="Select role"
+              >
+                {Object.entries(ROLES).map(([key, { label }]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
             {collaborator.role !== "Artist" && (
               <Button
@@ -307,6 +256,7 @@ const CollaboratorCard = memo(function CollaboratorCard({
                   onDelete();
                 }}
                 className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                aria-label="Remove collaborator"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -324,9 +274,14 @@ const CollaboratorCard = memo(function CollaboratorCard({
                 onChange={(e) => onUpdate("name", e.target.value)}
                 placeholder="Full name"
                 className={`mt-1 ${error?.name ? "border-red-500" : ""}`}
-                onClick={(e) => e.stopPropagation()}
+                aria-invalid={!!error?.name}
+                aria-describedby={error?.name ? `error-name-${collaborator.id}` : undefined}
               />
-              {error?.name && <p className="text-red-500 text-xs mt-1">{error.name}</p>}
+              {error?.name && (
+                <p id={`error-name-${collaborator.id}`} className="text-red-500 text-xs mt-1">
+                  {error.name}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -340,9 +295,14 @@ const CollaboratorCard = memo(function CollaboratorCard({
                   onChange={(e) => onUpdate("email", e.target.value)}
                   placeholder="Email address"
                   className={`mt-1 ${error?.email ? "border-red-500" : ""}`}
-                  onClick={(e) => e.stopPropagation()}
+                  aria-invalid={!!error?.email}
+                  aria-describedby={error?.email ? `error-email-${collaborator.id}` : undefined}
                 />
-                {error?.email && <p className="text-red-500 text-xs mt-1">{error.email}</p>}
+                {error?.email && (
+                  <p id={`error-email-${collaborator.id}`} className="text-red-500 text-xs mt-1">
+                    {error.email}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -350,7 +310,7 @@ const CollaboratorCard = memo(function CollaboratorCard({
                   htmlFor="wallet"
                   className={`text-xs ${error?.walletAddress ? "text-red-500" : "text-gray-500"}`}
                 >
-                  Wallet (Optional)
+                  Wallet Address
                 </Label>
                 <Input
                   id="wallet"
@@ -358,21 +318,24 @@ const CollaboratorCard = memo(function CollaboratorCard({
                   onChange={(e) => onUpdate("walletAddress", e.target.value)}
                   placeholder="0x..."
                   className={`mt-1 ${error?.walletAddress ? "border-red-500" : ""}`}
-                  onClick={(e) => e.stopPropagation()}
+                  aria-invalid={!!error?.walletAddress}
+                  aria-describedby={error?.walletAddress ? `error-wallet-${collaborator.id}` : undefined}
                 />
-                {error?.walletAddress && <p className="text-red-500 text-xs mt-1">{error.walletAddress}</p>}
+                {error?.walletAddress && (
+                  <p id={`error-wallet-${collaborator.id}`} className="text-red-500 text-xs mt-1">
+                    {error.walletAddress}
+                  </p>
+                )}
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label
-                  htmlFor={`percentage-${collaborator.id}`}
-                  className={`text-xs ${error?.percentage ? "text-red-500" : "text-gray-500"}`}
-                >
-                  Revenue Share (%)
-                </Label>
-              </div>
+              <Label
+                htmlFor={`percentage-${collaborator.id}`}
+                className={`text-xs ${error?.percentage ? "text-red-500" : "text-gray-500"}`}
+              >
+                Revenue Share (%)
+              </Label>
               <RangeSlider
                 value={collaborator.percentage}
                 onChange={(value) => onUpdate("percentage", value)}
@@ -380,7 +343,11 @@ const CollaboratorCard = memo(function CollaboratorCard({
                 max={100}
                 color={roleConfig.color}
               />
-              {error?.percentage && <p className="text-red-500 text-xs mt-1">{error.percentage}</p>}
+              {error?.percentage && (
+                <p id={`error-percentage-${collaborator.id}`} className="text-red-500 text-xs mt-1">
+                  {error.percentage}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -391,13 +358,13 @@ const CollaboratorCard = memo(function CollaboratorCard({
 
 // Update SplitPieChart component props
 const PLATFORM_FEE = 2.5;
-const PLATFORM_FEE_COLOR = '#a1a1aa'; // gray-400
-const SplitPieChart = memo(function SplitPieChart({ 
+const PLATFORM_FEE_COLOR = "#a1a1aa"; // gray-400
+const SplitPieChart = memo(function SplitPieChart({
   collaborators,
   curatorPercentage,
   enableCuratorShares,
-  targetRaise 
-}: { 
+  targetRaise,
+}: {
   collaborators: Collaborator[];
   curatorPercentage: number;
   enableCuratorShares: boolean;
@@ -416,12 +383,12 @@ const SplitPieChart = memo(function SplitPieChart({
 
   // Format amount with commas and 2 decimal places
   const formatAmount = (amount: number | null) => {
-    if (amount === null) return '';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    if (amount === null) return "";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -437,22 +404,24 @@ const SplitPieChart = memo(function SplitPieChart({
       color: ROLES[c.role as keyof typeof ROLES]?.color || c.color || ROLES.Artist.color,
     })),
     ...(enableCuratorShares && curatorPercentage > 0
-      ? [{
-          id: 'early-supporters',
-          name: 'Curators',
-          role: 'Curator',
-          email: '',
-          walletAddress: '',
-          effectivePercentage: curatorPercentage,
-          color: ROLES.Curator.color,
-        }]
+      ? [
+          {
+            id: "early-supporters",
+            name: "Curators",
+            role: "Curator",
+            email: "",
+            walletAddress: "",
+            effectivePercentage: curatorPercentage,
+            color: ROLES.Curator.color,
+          },
+        ]
       : []),
     {
-      id: 'platform-fee',
-      name: 'Platform Fee',
-      role: 'Platform',
-      email: '',
-      walletAddress: '',
+      id: "platform-fee",
+      name: "Platform Fee",
+      role: "Platform",
+      email: "",
+      walletAddress: "",
       effectivePercentage: PLATFORM_FEE,
       color: PLATFORM_FEE_COLOR,
     },
@@ -472,7 +441,7 @@ const SplitPieChart = memo(function SplitPieChart({
     let startAngle = 0;
     pieSlices.forEach((slice, idx) => {
       const sliceAngle = (slice.effectivePercentage / 100) * 2 * Math.PI;
-      const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : slice.color;
+      const color = slice.id === "platform-fee" ? PLATFORM_FEE_COLOR : slice.color;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
@@ -548,22 +517,20 @@ const SplitPieChart = memo(function SplitPieChart({
             {(() => {
               const slice = pieSlices[hoveredSlice];
               const percent = slice?.effectivePercentage || 0;
-              const name = slice?.id === 'early-supporters' ? 'Curators' : (slice?.name || slice?.role);
+              const name = slice?.id === "early-supporters" ? "Curators" : slice?.name || slice?.role;
               const amount = calculateAmount(percent);
-              const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : (ROLES[slice?.role as keyof typeof ROLES]?.color || ROLES.Curator.color);
+              const color =
+                slice.id === "platform-fee"
+                  ? PLATFORM_FEE_COLOR
+                  : ROLES[slice?.role as keyof typeof ROLES]?.color || ROLES.Curator.color;
               return (
                 <>
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                     <span>{name}</span>
                     <span className="font-medium">{percent}%</span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {`${percent}% of every $100`}
-                  </div>
+                  <div className="text-xs text-gray-500 mt-1">{`${percent}% of every $100`}</div>
                   {targetRaise && amount !== null && (
                     <div className="text-xs text-gray-800 mt-1 font-semibold">
                       {formatAmount(amount)} USDC from target raise
@@ -577,7 +544,10 @@ const SplitPieChart = memo(function SplitPieChart({
       </div>
       <motion.div className="grid grid-cols-2 gap-2 w-full">
         {pieSlices.map((slice, index) => {
-          const color = slice.id === 'platform-fee' ? PLATFORM_FEE_COLOR : (ROLES[slice.role as keyof typeof ROLES]?.color || ROLES.Artist.color);
+          const color =
+            slice.id === "platform-fee"
+              ? PLATFORM_FEE_COLOR
+              : ROLES[slice.role as keyof typeof ROLES]?.color || ROLES.Artist.color;
           return (
             <motion.div
               key={slice.id + index}
@@ -936,14 +906,20 @@ export default function Step3RoyaltySplits({ onNext, onPrevious }: Step2Props) {
   }, []);
 
   // Handle curator shares toggle
-  const handleCuratorSharesChange = useCallback((checked: boolean) => {
-    updateField("enableEarlySupporters", checked);
-  }, [updateField]);
+  const handleCuratorSharesChange = useCallback(
+    (checked: boolean) => {
+      updateField("enableEarlySupporters", checked);
+    },
+    [updateField]
+  );
 
   // Handle curator percentage change
-  const handleCuratorPercentageChange = useCallback((value: number) => {
-    updateField("earlySupportersPercentage", value);
-  }, [updateField]);
+  const handleCuratorPercentageChange = useCallback(
+    (value: number) => {
+      updateField("earlySupportersPercentage", value);
+    },
+    [updateField]
+  );
 
   // Validate the form
   const validateForm = useCallback(() => {
@@ -966,7 +942,10 @@ export default function Step3RoyaltySplits({ onNext, onPrevious }: Step2Props) {
         isValid = false;
       }
 
-      if (collab.walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(collab.walletAddress)) {
+      if (!collab.walletAddress.trim()) {
+        collabErrors.walletAddress = "Wallet address is required";
+        isValid = false;
+      } else if (!/^0x[a-fA-F0-9]{40}$/.test(collab.walletAddress)) {
         collabErrors.walletAddress = "Invalid wallet address";
         isValid = false;
       }
@@ -1101,8 +1080,8 @@ export default function Step3RoyaltySplits({ onNext, onPrevious }: Step2Props) {
           <Card>
             <CardContent className="p-4">
               <h3 className="text-lg font-medium mb-4">Revenue Split</h3>
-              <SplitPieChart 
-                collaborators={collaborators} 
+              <SplitPieChart
+                collaborators={collaborators}
                 curatorPercentage={projectData.earlySupportersPercentage}
                 enableCuratorShares={projectData.enableEarlySupporters}
                 targetRaise={projectData.targetRaise}
